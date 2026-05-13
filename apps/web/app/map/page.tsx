@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import MapLibreView from "@/components/map/map-libre-view";
+import RiskLegend from "@/components/map/risk-legend";
 
 export const metadata: Metadata = {
   title: "Mapa — Safe Maps",
@@ -198,99 +199,6 @@ function Sidebar() {
   );
 }
 
-// --- City Map SVG ---
-
-function CityMap() {
-  return (
-    <svg
-      viewBox="0 0 1000 620"
-      className="absolute inset-0 w-full h-full"
-      preserveAspectRatio="xMidYMid slice"
-      aria-hidden="true"
-    >
-      {/* Base */}
-      <rect width="1000" height="620" fill="#06111f" />
-
-      {/* Risk zones */}
-      <polygon
-        points="580,0 1000,0 1000,380 820,460 670,310 590,140"
-        fill="rgba(16,185,129,0.07)"
-        stroke="rgba(16,185,129,0.12)"
-        strokeWidth="1"
-      />
-      <polygon
-        points="280,130 580,80 700,310 490,410 240,360"
-        fill="rgba(245,158,11,0.07)"
-        stroke="rgba(245,158,11,0.12)"
-        strokeWidth="1"
-      />
-      <polygon
-        points="0,190 280,170 360,390 195,510 0,490"
-        fill="rgba(239,68,68,0.09)"
-        stroke="rgba(239,68,68,0.15)"
-        strokeWidth="1"
-      />
-
-      {/* Street grid — horizontal */}
-      {[60, 110, 160, 210, 260, 310, 360, 410, 460, 510, 560].map((y) => (
-        <line key={`h${y}`} x1="0" y1={y} x2="1000" y2={y} stroke="rgba(148,163,184,0.055)" strokeWidth="1" />
-      ))}
-
-      {/* Street grid — vertical */}
-      {[60, 130, 200, 270, 340, 410, 480, 550, 620, 690, 760, 830, 900, 970].map((x) => (
-        <line key={`v${x}`} x1={x} y1="0" x2={x} y2="620" stroke="rgba(148,163,184,0.055)" strokeWidth="1" />
-      ))}
-
-      {/* Major avenues */}
-      <line x1="0" y1="310" x2="1000" y2="310" stroke="rgba(148,163,184,0.13)" strokeWidth="2" />
-      <line x1="480" y1="0" x2="480" y2="620" stroke="rgba(148,163,184,0.13)" strokeWidth="2" />
-
-      {/* Diagonal road */}
-      <line x1="0" y1="180" x2="900" y2="580" stroke="rgba(148,163,184,0.09)" strokeWidth="1.5" />
-
-      {/* River feature */}
-      <path
-        d="M 310 0 C 330 80 295 160 315 240 C 335 320 300 400 320 510 C 330 560 310 600 305 620"
-        stroke="rgba(6,182,212,0.18)"
-        strokeWidth="7"
-        fill="none"
-        strokeLinecap="round"
-      />
-
-      {/* Route path */}
-      <path
-        d="M 160 200 C 220 200 260 240 310 280 C 365 325 395 345 450 360 C 510 378 555 358 610 378 C 660 395 700 420 750 440 C 795 458 840 468 870 480"
-        stroke="rgba(6,182,212,0.85)"
-        strokeWidth="3"
-        fill="none"
-        strokeDasharray="10 5"
-        strokeLinecap="round"
-      />
-
-      {/* Origin marker */}
-      <circle cx="160" cy="200" r="7"  fill="rgba(6,182,212,0.95)" />
-      <circle cx="160" cy="200" r="13" fill="none" stroke="rgba(6,182,212,0.35)" strokeWidth="2" />
-      <circle cx="160" cy="200" r="20" fill="none" stroke="rgba(6,182,212,0.12)" strokeWidth="1.5" />
-
-      {/* Destination marker */}
-      <circle cx="870" cy="480" r="7"  fill="rgba(16,185,129,0.95)" />
-      <circle cx="870" cy="480" r="13" fill="none" stroke="rgba(16,185,129,0.35)" strokeWidth="2" />
-      <circle cx="870" cy="480" r="20" fill="none" stroke="rgba(16,185,129,0.12)" strokeWidth="1.5" />
-
-      {/* Block fills (give depth) */}
-      {[
-        [70, 70, 55, 35],   [135, 70, 55, 35],  [420, 70, 55, 35],
-        [70, 170, 55, 35],  [200, 220, 55, 35],  [560, 120, 55, 35],
-        [630, 170, 55, 35], [700, 70, 55, 35],   [770, 320, 55, 35],
-        [840, 170, 55, 35], [560, 320, 55, 35],  [420, 420, 55, 35],
-        [700, 420, 55, 35], [840, 420, 55, 35],
-      ].map(([x, y, w, h], i) => (
-        <rect key={i} x={x} y={y} width={w} height={h} fill="rgba(6,15,30,0.6)" rx="1" />
-      ))}
-    </svg>
-  );
-}
-
 // --- Map Area ---
 
 function MapToolbar() {
@@ -301,65 +209,16 @@ function MapToolbar() {
         <span>Cali · Valle del Cauca · Colombia</span>
       </div>
       <div className="hidden sm:flex items-center gap-4 text-[11px] font-mono text-slate-600">
-        <span>Zoom 13</span>
+        <span>Zoom 12</span>
         <span>3.4516° N · 76.5320° O</span>
       </div>
     </div>
   );
 }
 
-function MapZones() {
-  return (
-    <>
-      <div className="absolute top-[18%] right-[12%] flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/25 backdrop-blur-sm">
-        <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-        <span className="text-[11px] font-mono text-emerald-300">Riesgo bajo</span>
-      </div>
-      <div className="absolute top-[48%] left-[42%] flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/25 backdrop-blur-sm">
-        <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-        <span className="text-[11px] font-mono text-amber-300">Riesgo medio</span>
-      </div>
-      <div className="absolute top-[62%] left-[9%] flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-red-500/15 border border-red-500/25 backdrop-blur-sm">
-        <span className="w-2 h-2 rounded-full bg-red-400 animate-pulse" />
-        <span className="text-[11px] font-mono text-red-300">Riesgo alto</span>
-      </div>
-    </>
-  );
-}
-
-function MapMarkerLabels() {
-  return (
-    <>
-      <div className="absolute top-[28%] left-[12%] px-2 py-0.5 rounded bg-[#060d1a]/90 border border-cyan-500/30 text-[10px] font-mono text-cyan-400 whitespace-nowrap backdrop-blur-sm">
-        Centro, Cali
-      </div>
-      <div className="absolute bottom-[18%] right-[8%] px-2 py-0.5 rounded bg-[#060d1a]/90 border border-emerald-500/30 text-[10px] font-mono text-emerald-400 whitespace-nowrap backdrop-blur-sm">
-        Aguablanca, Cali
-      </div>
-    </>
-  );
-}
-
-function MapControls() {
-  return (
-    <div className="absolute bottom-4 right-4 flex flex-col gap-1">
-      {["+", "−"].map((label) => (
-        <button
-          key={label}
-          type="button"
-          className="w-8 h-8 flex items-center justify-center rounded-lg bg-[#060d1a]/90 border border-white/10 hover:border-cyan-500/30 text-slate-400 hover:text-cyan-400 text-sm font-mono transition-colors duration-200 backdrop-blur-sm"
-          aria-label={label === "+" ? "Acercar" : "Alejar"}
-        >
-          {label}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 function CoordWatermark() {
   return (
-    <p className="absolute bottom-4 left-4 text-[9px] font-mono text-slate-700 pointer-events-none">
+    <p className="absolute bottom-4 left-4 text-[9px] font-mono text-slate-700 pointer-events-none z-10">
       3.4516° N · 76.5320° O
     </p>
   );
@@ -370,9 +229,7 @@ function MapArea() {
     <main className="flex-1 relative min-h-[55vh] md:min-h-0 overflow-hidden">
       <MapLibreView />
       <MapToolbar />
-      <MapZones />
-      <MapMarkerLabels />
-      <MapControls />
+      <RiskLegend />
       <CoordWatermark />
     </main>
   );

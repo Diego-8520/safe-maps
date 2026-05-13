@@ -1,7 +1,10 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(Get-Content c:\\\\Users\\\\DIEGO\\\\Documents\\\\Proyectos\\\\safe-maps\\\\apps\\\\web\\\\package.json)",
+      "PowerShell(New-Item -ItemType Directory -Force \"c:\\\\Users\\\\DIEGO\\\\Documents\\\\Proyectos\\\\safe-maps\\\\apps\\\\web\\\\public\\\\data\")",
+      "WebSearch"
     ]
   }
 }

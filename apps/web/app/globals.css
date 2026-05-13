@@ -47,3 +47,14 @@ body {
 .title-glow {
   animation: glow-pulse 4s ease-in-out infinite;
 }
+
+/* MapLibre popup — strip default white background for custom dark HTML */
+.maplibregl-popup-content {
+  background: transparent;
+  padding: 0;
+  box-shadow: none;
+}
+
+.maplibregl-popup-tip {
+  display: none;
+}
