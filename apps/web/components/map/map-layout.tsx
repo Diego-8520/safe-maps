@@ -51,14 +51,48 @@ function MapArea({
 export default function MapLayout() {
   const [selected, setSelected] = useState<EnrichedFeatureProperties | null>(null);
   const [route, setRoute] = useState<RouteAnalysis | null>(null);
+  const [origin, setOrigin] = useState("Centro, Cali");
+  const [destination, setDestination] = useState("Aguablanca, Cali");
+  const [routeError, setRouteError] = useState<string | null>(null);
 
   function handleAnalyzeRoute() {
-    setRoute(MOCK_ROUTE_ANALYSIS);
+    const cleanOrigin = origin.trim();
+    const cleanDestination = destination.trim();
+
+    if (!cleanOrigin || !cleanDestination) {
+      setRouteError("Ingresa un origen y un destino para analizar la ruta.");
+      setRoute(null);
+      return;
+    }
+
+    if (cleanOrigin.toLowerCase() === cleanDestination.toLowerCase()) {
+      setRouteError("El origen y el destino deben ser diferentes.");
+      setRoute(null);
+      return;
+    }
+
+    setRouteError(null);
+
+    // En una fase futura aquí se llamará al backend / OpenRouteService.
+    setRoute({
+      ...MOCK_ROUTE_ANALYSIS,
+      originLabel: cleanOrigin,
+      destinationLabel: cleanDestination,
+    });
   }
 
   return (
     <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-hidden">
-      <MapSidebar selected={selected} route={route} onAnalyzeRoute={handleAnalyzeRoute} />
+      <MapSidebar
+        selected={selected}
+        route={route}
+        origin={origin}
+        destination={destination}
+        onOriginChange={setOrigin}
+        onDestinationChange={setDestination}
+        onAnalyzeRoute={handleAnalyzeRoute}
+        routeError={routeError}
+      />
       <MapArea onCommuneSelect={(c) => setSelected(c)} route={route} />
     </div>
   );

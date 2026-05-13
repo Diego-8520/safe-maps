@@ -65,11 +65,11 @@ export default function RouteSummary({ route }: { route: RouteAnalysis | null })
         </div>
         <div className="flex items-center justify-between p-3 rounded-xl bg-white/3 border border-white/6">
           <span className="text-xs text-slate-400">Origen</span>
-          <span className="text-xs font-mono text-slate-500 truncate max-w-35 text-right italic">demo</span>
+          <span className="text-xs font-mono text-slate-300 truncate max-w-35 text-right">{route.originLabel}</span>
         </div>
         <div className="flex items-center justify-between p-3 rounded-xl bg-white/3 border border-white/6">
           <span className="text-xs text-slate-400">Destino</span>
-          <span className="text-xs font-mono text-slate-500 truncate max-w-35 text-right italic">demo</span>
+          <span className="text-xs font-mono text-slate-300 truncate max-w-35 text-right">{route.destinationLabel}</span>
         </div>
       </div>
 
