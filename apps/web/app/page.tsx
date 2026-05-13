@@ -1,10 +1,20 @@
+import Link from "next/link";
+
 // --- Icon components (inline SVG) ---
 
 type IconProps = { className?: string };
 
 function IconMap({ className }: IconProps) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M9 20.5L3 17.5V3.5L9 6.5M9 20.5L15 17.5M9 20.5V6.5M15 17.5L21 20.5V6.5L15 3.5M15 17.5V3.5M9 6.5L15 3.5" />
     </svg>
   );
@@ -12,7 +22,15 @@ function IconMap({ className }: IconProps) {
 
 function IconShield({ className }: IconProps) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
     </svg>
   );
@@ -20,7 +38,15 @@ function IconShield({ className }: IconProps) {
 
 function IconFunction({ className }: IconProps) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M15.5 5C13 5 12 7 12 9v6c0 2-1 4-3.5 4" />
       <path d="M8.5 9h7M8.5 15h7" />
     </svg>
@@ -29,7 +55,15 @@ function IconFunction({ className }: IconProps) {
 
 function IconArrow({ className }: IconProps) {
   return (
-    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.5}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M5 12h14M12 5l7 7-7 7" />
     </svg>
   );
@@ -84,10 +118,32 @@ function Hero() {
         preserveAspectRatio="xMidYMid slice"
       >
         {[80, 160, 240, 320, 400].map((r) => (
-          <circle key={r} cx="400" cy="400" r={r} fill="none" stroke="rgb(6,182,212)" strokeWidth="1" />
+          <circle
+            key={r}
+            cx="400"
+            cy="400"
+            r={r}
+            fill="none"
+            stroke="rgb(6,182,212)"
+            strokeWidth="1"
+          />
         ))}
-        <line x1="400" y1="0" x2="400" y2="800" stroke="rgb(6,182,212)" strokeWidth="0.5" />
-        <line x1="0" y1="400" x2="800" y2="400" stroke="rgb(6,182,212)" strokeWidth="0.5" />
+        <line
+          x1="400"
+          y1="0"
+          x2="400"
+          y2="800"
+          stroke="rgb(6,182,212)"
+          strokeWidth="0.5"
+        />
+        <line
+          x1="0"
+          y1="400"
+          x2="800"
+          y2="400"
+          stroke="rgb(6,182,212)"
+          strokeWidth="0.5"
+        />
       </svg>
 
       {/* Radial glow */}
@@ -95,10 +151,13 @@ function Hero() {
 
       {/* Corner meta */}
       <p className="absolute top-24 left-6 text-[10px] font-mono text-cyan-500/25 leading-relaxed hidden md:block">
-        3.4516° N<br />76.5320° O
+        3.4516° N<br />
+        76.5320° O
       </p>
       <p className="absolute top-24 right-6 text-[10px] font-mono text-cyan-500/25 leading-relaxed text-right hidden md:block">
-        CALI · COL<br />ZONA URBANA
+        CALI · COL
+        <br />
+        ZONA URBANA
       </p>
 
       {/* Content */}
@@ -118,13 +177,13 @@ function Hero() {
         </p>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <a
-            href="#map"
+          <Link
+            href="/map"
             className="group flex items-center gap-2.5 px-8 py-3.5 bg-cyan-500 hover:bg-cyan-400 text-[#050a14] font-semibold rounded-lg transition-all duration-200 text-sm uppercase tracking-wide"
           >
             Explorar mapa
             <IconArrow className="w-4 h-4 group-hover:translate-x-0.5 transition-transform duration-200" />
-          </a>
+          </Link>
           <a
             href="#flow"
             className="flex items-center gap-2.5 px-8 py-3.5 border border-slate-600 hover:border-cyan-500/50 hover:text-white text-slate-300 font-medium rounded-lg transition-all duration-200 text-sm uppercase tracking-wide"
@@ -149,17 +208,39 @@ type FeatureCardProps = {
   accent: "cyan" | "emerald" | "amber";
 };
 
-const ACCENT: Record<string, { border: string; iconBg: string; icon: string }> = {
-  cyan:    { border: "border-cyan-500/20 hover:border-cyan-500/40",    iconBg: "bg-cyan-500/10",    icon: "text-cyan-400"    },
-  emerald: { border: "border-emerald-500/20 hover:border-emerald-500/40", iconBg: "bg-emerald-500/10", icon: "text-emerald-400" },
-  amber:   { border: "border-amber-500/20 hover:border-amber-500/40",   iconBg: "bg-amber-500/10",   icon: "text-amber-400"   },
-};
+const ACCENT: Record<string, { border: string; iconBg: string; icon: string }> =
+  {
+    cyan: {
+      border: "border-cyan-500/20 hover:border-cyan-500/40",
+      iconBg: "bg-cyan-500/10",
+      icon: "text-cyan-400",
+    },
+    emerald: {
+      border: "border-emerald-500/20 hover:border-emerald-500/40",
+      iconBg: "bg-emerald-500/10",
+      icon: "text-emerald-400",
+    },
+    amber: {
+      border: "border-amber-500/20 hover:border-amber-500/40",
+      iconBg: "bg-amber-500/10",
+      icon: "text-amber-400",
+    },
+  };
 
-function FeatureCard({ icon: Icon, title, description, accent }: FeatureCardProps) {
+function FeatureCard({
+  icon: Icon,
+  title,
+  description,
+  accent,
+}: FeatureCardProps) {
   const a = ACCENT[accent];
   return (
-    <div className={`p-6 rounded-2xl border ${a.border} bg-white/[0.02] backdrop-blur-sm transition-all duration-300`}>
-      <div className={`w-10 h-10 rounded-xl ${a.iconBg} flex items-center justify-center mb-5`}>
+    <div
+      className={`p-6 rounded-2xl border ${a.border} bg-white/[0.02] backdrop-blur-sm transition-all duration-300`}
+    >
+      <div
+        className={`w-10 h-10 rounded-xl ${a.iconBg} flex items-center justify-center mb-5`}
+      >
         <Icon className={`w-5 h-5 ${a.icon}`} />
       </div>
       <h3 className="text-white font-semibold mb-2">{title}</h3>
@@ -212,14 +293,14 @@ type RiskLevel = "low" | "medium" | "high";
 type RiskDotProps = { x: number; y: number; level: RiskLevel };
 
 const DOT_COLORS: Record<RiskLevel, string> = {
-  low:    "bg-emerald-400",
+  low: "bg-emerald-400",
   medium: "bg-amber-400",
-  high:   "bg-red-500",
+  high: "bg-red-500",
 };
 const RING_COLORS: Record<RiskLevel, string> = {
-  low:    "bg-emerald-400/25",
+  low: "bg-emerald-400/25",
   medium: "bg-amber-400/25",
-  high:   "bg-red-500/25",
+  high: "bg-red-500/25",
 };
 
 function RiskDot({ x, y, level }: RiskDotProps) {
@@ -228,8 +309,12 @@ function RiskDot({ x, y, level }: RiskDotProps) {
       className="absolute -translate-x-1/2 -translate-y-1/2"
       style={{ left: `${x}%`, top: `${y}%` }}
     >
-      <div className={`absolute w-5 h-5 -translate-x-1/2 -translate-y-1/2 rounded-full ${RING_COLORS[level]} animate-ping`} />
-      <div className={`relative w-2.5 h-2.5 rounded-full ${DOT_COLORS[level]} -translate-x-1/2 -translate-y-1/2`} />
+      <div
+        className={`absolute w-5 h-5 -translate-x-1/2 -translate-y-1/2 rounded-full ${RING_COLORS[level]} animate-ping`}
+      />
+      <div
+        className={`relative w-2.5 h-2.5 rounded-full ${DOT_COLORS[level]} -translate-x-1/2 -translate-y-1/2`}
+      />
     </div>
   );
 }
@@ -281,20 +366,70 @@ function MapPreview() {
               preserveAspectRatio="xMidYMid slice"
             >
               {/* Low risk — emerald */}
-              <polygon points="60,70 180,50 210,130 150,175 70,155"  fill="rgba(16,185,129,0.12)" stroke="rgba(16,185,129,0.35)" strokeWidth="1" />
-              <polygon points="500,50 630,30 665,115 575,148 475,120" fill="rgba(16,185,129,0.10)" stroke="rgba(16,185,129,0.30)" strokeWidth="1" />
-              <polygon points="630,295 730,272 768,355 680,395 605,365" fill="rgba(16,185,129,0.09)" stroke="rgba(16,185,129,0.25)" strokeWidth="1" />
+              <polygon
+                points="60,70 180,50 210,130 150,175 70,155"
+                fill="rgba(16,185,129,0.12)"
+                stroke="rgba(16,185,129,0.35)"
+                strokeWidth="1"
+              />
+              <polygon
+                points="500,50 630,30 665,115 575,148 475,120"
+                fill="rgba(16,185,129,0.10)"
+                stroke="rgba(16,185,129,0.30)"
+                strokeWidth="1"
+              />
+              <polygon
+                points="630,295 730,272 768,355 680,395 605,365"
+                fill="rgba(16,185,129,0.09)"
+                stroke="rgba(16,185,129,0.25)"
+                strokeWidth="1"
+              />
 
               {/* Medium risk — amber */}
-              <polygon points="180,50 325,38 358,135 255,178 210,130"  fill="rgba(245,158,11,0.12)" stroke="rgba(245,158,11,0.35)" strokeWidth="1" />
-              <polygon points="70,155 210,175 235,278 155,318 62,295"  fill="rgba(245,158,11,0.10)" stroke="rgba(245,158,11,0.30)" strokeWidth="1" />
-              <polygon points="395,195 520,175 558,278 455,318 375,285" fill="rgba(245,158,11,0.10)" stroke="rgba(245,158,11,0.30)" strokeWidth="1" />
-              <polygon points="318,335 438,318 478,418 375,438 295,418" fill="rgba(245,158,11,0.08)" stroke="rgba(245,158,11,0.25)" strokeWidth="1" />
+              <polygon
+                points="180,50 325,38 358,135 255,178 210,130"
+                fill="rgba(245,158,11,0.12)"
+                stroke="rgba(245,158,11,0.35)"
+                strokeWidth="1"
+              />
+              <polygon
+                points="70,155 210,175 235,278 155,318 62,295"
+                fill="rgba(245,158,11,0.10)"
+                stroke="rgba(245,158,11,0.30)"
+                strokeWidth="1"
+              />
+              <polygon
+                points="395,195 520,175 558,278 455,318 375,285"
+                fill="rgba(245,158,11,0.10)"
+                stroke="rgba(245,158,11,0.30)"
+                strokeWidth="1"
+              />
+              <polygon
+                points="318,335 438,318 478,418 375,438 295,418"
+                fill="rgba(245,158,11,0.08)"
+                stroke="rgba(245,158,11,0.25)"
+                strokeWidth="1"
+              />
 
               {/* High risk — red */}
-              <polygon points="255,178 378,155 418,258 335,298 235,278" fill="rgba(239,68,68,0.15)" stroke="rgba(239,68,68,0.42)" strokeWidth="1" />
-              <polygon points="155,318 278,298 318,398 215,438 135,408" fill="rgba(239,68,68,0.12)" stroke="rgba(239,68,68,0.35)" strokeWidth="1" />
-              <polygon points="520,175 645,155 682,258 578,298 498,268" fill="rgba(239,68,68,0.10)" stroke="rgba(239,68,68,0.30)" strokeWidth="1" />
+              <polygon
+                points="255,178 378,155 418,258 335,298 235,278"
+                fill="rgba(239,68,68,0.15)"
+                stroke="rgba(239,68,68,0.42)"
+                strokeWidth="1"
+              />
+              <polygon
+                points="155,318 278,298 318,398 215,438 135,408"
+                fill="rgba(239,68,68,0.12)"
+                stroke="rgba(239,68,68,0.35)"
+                strokeWidth="1"
+              />
+              <polygon
+                points="520,175 645,155 682,258 578,298 498,268"
+                fill="rgba(239,68,68,0.10)"
+                stroke="rgba(239,68,68,0.30)"
+                strokeWidth="1"
+              />
 
               {/* Route */}
               <path
@@ -306,22 +441,36 @@ function MapPreview() {
               />
 
               {/* Origin */}
-              <circle cx="125" cy="112" r="6"  fill="rgba(6,182,212,0.95)" />
-              <circle cx="125" cy="112" r="11" fill="none" stroke="rgba(6,182,212,0.35)" strokeWidth="2" />
+              <circle cx="125" cy="112" r="6" fill="rgba(6,182,212,0.95)" />
+              <circle
+                cx="125"
+                cy="112"
+                r="11"
+                fill="none"
+                stroke="rgba(6,182,212,0.35)"
+                strokeWidth="2"
+              />
 
               {/* Destination */}
-              <circle cx="625" cy="318" r="6"  fill="rgba(16,185,129,0.95)" />
-              <circle cx="625" cy="318" r="11" fill="none" stroke="rgba(16,185,129,0.35)" strokeWidth="2" />
+              <circle cx="625" cy="318" r="6" fill="rgba(16,185,129,0.95)" />
+              <circle
+                cx="625"
+                cy="318"
+                r="11"
+                fill="none"
+                stroke="rgba(16,185,129,0.35)"
+                strokeWidth="2"
+              />
             </svg>
 
             {/* Risk dots */}
-            <RiskDot x={20} y={22} level="low"    />
-            <RiskDot x={73} y={13} level="low"    />
+            <RiskDot x={20} y={22} level="low" />
+            <RiskDot x={73} y={13} level="low" />
             <RiskDot x={28} y={50} level="medium" />
-            <RiskDot x={49} y={60} level="high"   />
-            <RiskDot x={34} y={74} level="high"   />
+            <RiskDot x={49} y={60} level="high" />
+            <RiskDot x={34} y={74} level="high" />
             <RiskDot x={63} y={52} level="medium" />
-            <RiskDot x={80} y={67} level="low"    />
+            <RiskDot x={80} y={67} level="low" />
 
             {/* Scan line */}
             <div
@@ -412,9 +561,9 @@ function FlowSection() {
             Cómo funciona
           </h2>
           <p className="text-slate-400 leading-relaxed text-sm max-w-sm">
-            El sistema analiza rutas urbanas en Cali evaluando el riesgo en
-            cada segmento mediante un modelo diferencial que captura la
-            dinámica temporal del peligro por comunas.
+            El sistema analiza rutas urbanas en Cali evaluando el riesgo en cada
+            segmento mediante un modelo diferencial que captura la dinámica
+            temporal del peligro por comunas.
           </p>
         </div>
         <div>
@@ -458,7 +607,7 @@ function Footer() {
           </span>
         </div>
         <p className="text-[11px] font-mono text-slate-700">
-          Proyecto académico · Universidad del Valle · Cali, Colombia
+          Proyecto académico · Cali, Colombia
         </p>
       </div>
     </footer>
