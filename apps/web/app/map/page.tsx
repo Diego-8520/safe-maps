@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import MapLibreView from "@/components/map/map-libre-view";
 
 export const metadata: Metadata = {
   title: "Mapa — Safe Maps",
@@ -367,7 +368,7 @@ function CoordWatermark() {
 function MapArea() {
   return (
     <main className="flex-1 relative min-h-[55vh] md:min-h-0 overflow-hidden">
-      <CityMap />
+      <MapLibreView />
       <MapToolbar />
       <MapZones />
       <MapMarkerLabels />
