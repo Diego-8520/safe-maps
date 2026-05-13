@@ -6,7 +6,8 @@ import RiskLegend from "@/components/map/risk-legend";
 import MapSidebar from "@/components/map/sidebar/map-sidebar";
 import type { EnrichedFeatureProperties } from "@/components/map/types";
 import type { RouteAnalysis } from "@/components/map/routes/route-types";
-import { MOCK_ROUTE_ANALYSIS } from "@/components/map/routes/mock-route";
+import { analyzeDemoRoute } from "@/components/map/routes/services/analyze-demo-route";
+import { validateRouteInput } from "@/components/map/routes/services/route-validation";
 
 function MapToolbar() {
   return (
@@ -56,29 +57,22 @@ export default function MapLayout() {
   const [routeError, setRouteError] = useState<string | null>(null);
 
   function handleAnalyzeRoute() {
-    const cleanOrigin = origin.trim();
-    const cleanDestination = destination.trim();
+    const validation = validateRouteInput(origin, destination);
 
-    if (!cleanOrigin || !cleanDestination) {
-      setRouteError("Ingresa un origen y un destino para analizar la ruta.");
-      setRoute(null);
-      return;
-    }
-
-    if (cleanOrigin.toLowerCase() === cleanDestination.toLowerCase()) {
-      setRouteError("El origen y el destino deben ser diferentes.");
+    if (!validation.valid) {
+      setRouteError(validation.error);
       setRoute(null);
       return;
     }
 
     setRouteError(null);
 
-    // En una fase futura aquí se llamará al backend / OpenRouteService.
-    setRoute({
-      ...MOCK_ROUTE_ANALYSIS,
-      originLabel: cleanOrigin,
-      destinationLabel: cleanDestination,
+    const analyzedRoute = analyzeDemoRoute({
+      origin: origin.trim(),
+      destination: destination.trim(),
     });
+
+    setRoute(analyzedRoute);
   }
 
   return (
