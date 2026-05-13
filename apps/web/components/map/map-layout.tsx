@@ -5,6 +5,8 @@ import MapLibreView from "@/components/map/map-libre-view";
 import RiskLegend from "@/components/map/risk-legend";
 import MapSidebar from "@/components/map/sidebar/map-sidebar";
 import type { EnrichedFeatureProperties } from "@/components/map/types";
+import type { RouteAnalysis } from "@/components/map/routes/route-types";
+import { MOCK_ROUTE_ANALYSIS } from "@/components/map/routes/mock-route";
 
 function MapToolbar() {
   return (
@@ -29,10 +31,16 @@ function CoordWatermark() {
   );
 }
 
-function MapArea({ onCommuneSelect }: { onCommuneSelect: (c: EnrichedFeatureProperties) => void }) {
+function MapArea({
+  onCommuneSelect,
+  route,
+}: {
+  onCommuneSelect: (c: EnrichedFeatureProperties) => void;
+  route: RouteAnalysis;
+}) {
   return (
     <main className="flex-1 relative min-h-[55vh] md:min-h-0 overflow-hidden">
-      <MapLibreView onCommuneSelect={onCommuneSelect} />
+      <MapLibreView onCommuneSelect={onCommuneSelect} route={route} />
       <MapToolbar />
       <RiskLegend />
       <CoordWatermark />
@@ -42,11 +50,12 @@ function MapArea({ onCommuneSelect }: { onCommuneSelect: (c: EnrichedFeatureProp
 
 export default function MapLayout() {
   const [selected, setSelected] = useState<EnrichedFeatureProperties | null>(null);
+  const route = MOCK_ROUTE_ANALYSIS;
 
   return (
     <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-hidden">
-      <MapSidebar selected={selected} />
-      <MapArea onCommuneSelect={(c) => setSelected(c)} />
+      <MapSidebar selected={selected} route={route} />
+      <MapArea onCommuneSelect={(c) => setSelected(c)} route={route} />
     </div>
   );
 }

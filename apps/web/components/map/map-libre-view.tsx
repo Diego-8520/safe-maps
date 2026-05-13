@@ -3,21 +3,29 @@
 import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import type { EnrichedFeatureProperties } from "./types";
+import type { RouteAnalysis } from "./routes/route-types";
 import { loadEnrichedGeojson, normalizeCommuneProperties } from "./data/load-communes";
 import { buildCommunePopupHtml } from "./popups/commune-popup";
+import { buildRouteGeoJson } from "./routes/route-utils";
 
 interface MapLibreViewProps {
   onCommuneSelect?: (commune: EnrichedFeatureProperties) => void;
+  route?: RouteAnalysis;
 }
 
-export default function MapLibreView({ onCommuneSelect }: MapLibreViewProps) {
+export default function MapLibreView({ onCommuneSelect, route }: MapLibreViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const onSelectRef = useRef(onCommuneSelect);
+  const routeRef = useRef(route);
 
   useEffect(() => {
     onSelectRef.current = onCommuneSelect;
   }, [onCommuneSelect]);
+
+  useEffect(() => {
+    routeRef.current = route;
+  }, [route]);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -51,6 +59,7 @@ export default function MapLibreView({ onCommuneSelect }: MapLibreViewProps) {
     map.on("load", () => {
       loadEnrichedGeojson()
         .then((enriched) => {
+          // --- Layer 1: comunas-fill ---
           if (!map.getSource("comunas-cali")) {
             map.addSource("comunas-cali", { type: "geojson", data: enriched });
           }
@@ -74,6 +83,7 @@ export default function MapLibreView({ onCommuneSelect }: MapLibreViewProps) {
             });
           }
 
+          // --- Layer 2: comunas-outline ---
           if (!map.getLayer("comunas-outline")) {
             map.addLayer({
               id: "comunas-outline",
@@ -91,6 +101,41 @@ export default function MapLibreView({ onCommuneSelect }: MapLibreViewProps) {
             });
           }
 
+          // --- Layer 3: demo-route-line (above communes, below selected outline) ---
+          if (routeRef.current && !map.getSource("demo-route")) {
+            map.addSource("demo-route", {
+              type: "geojson",
+              data: buildRouteGeoJson(routeRef.current),
+            });
+            map.addLayer({
+              id: "demo-route-line",
+              type: "line",
+              source: "demo-route",
+              layout: {
+                "line-cap": "round",
+                "line-join": "round",
+              },
+              paint: {
+                "line-color": [
+                  "match",
+                  ["get", "accumulatedRiskLevel"],
+                  "low",    "#22c55e",
+                  "medium", "#f59e0b",
+                  "high",   "#ef4444",
+                  "#38bdf8",
+                ],
+                "line-width": [
+                  "interpolate", ["linear"], ["zoom"],
+                  10, 3,
+                  12, 5,
+                  14, 7,
+                ],
+                "line-opacity": 0.95,
+              },
+            });
+          }
+
+          // --- Layer 4: selected-commune-outline (always on top) ---
           if (!map.getLayer("selected-commune-outline")) {
             map.addLayer({
               id: "selected-commune-outline",
@@ -105,6 +150,7 @@ export default function MapLibreView({ onCommuneSelect }: MapLibreViewProps) {
             });
           }
 
+          // --- Events ---
           map.on("mouseenter", "comunas-fill", () => {
             map.getCanvas().style.cursor = "pointer";
           });
