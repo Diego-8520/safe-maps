@@ -1,0 +1,28 @@
+# dependencies
+node_modules/
+
+# next
+.next/
+out/
+
+# python
+__pycache__/
+*.pyc
+.venv/
+env/
+
+# environment
+.env
+.env.local
+
+# logs
+*.log
+
+# mac
+.DS_Store
+
+# vscode
+.vscode/
+
+# build
+dist/
