@@ -2,101 +2,12 @@
 
 import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
-import type { CommuneRiskData, EnrichedFeatureProperties } from "./types";
-import { getRiskColor, getRiskLevelLabel, isRiskLevel } from "./risk-utils";
+import type { EnrichedFeatureProperties } from "./types";
+import { loadEnrichedGeojson, normalizeCommuneProperties } from "./data/load-communes";
+import { buildCommunePopupHtml } from "./popups/commune-popup";
 
 interface MapLibreViewProps {
   onCommuneSelect?: (commune: EnrichedFeatureProperties) => void;
-}
-
-const RISK_FALLBACK: Omit<CommuneRiskData, "comuna"> = {
-  riskScore: 0,
-  riskLevel: "low",
-  criminalidad: 0,
-  seguridad: 0,
-  vigilancia: 0,
-  iluminacion: 0,
-  flujoPersonas: 0,
-};
-
-function buildPopupHtml(p: EnrichedFeatureProperties): string {
-  const color = getRiskColor(p.riskLevel);
-  const label = getRiskLevelLabel(p.riskLevel);
-  const displayName = p.nombre ?? `Comuna ${p.comuna}`;
-  return `
-    <div style="
-      font-family: ui-monospace, monospace;
-      background: #060d1a;
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 10px;
-      padding: 10px 14px;
-      color: #e2e8f0;
-      font-size: 12px;
-      min-width: 190px;
-      pointer-events: none;
-    ">
-      <p style="margin:0 0 8px;font-weight:600;color:#fff;font-size:13px">${displayName}</p>
-      <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
-        <span style="width:8px;height:8px;border-radius:50%;background:${color};flex-shrink:0"></span>
-        <span style="color:${color};font-size:12px">Riesgo: ${label} · ${p.riskScore}/100</span>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 12px;color:#94a3b8;font-size:11px">
-        <span>Criminalidad</span><span style="color:#e2e8f0;text-align:right">${p.criminalidad}</span>
-        <span>Seguridad</span><span style="color:#e2e8f0;text-align:right">${p.seguridad}</span>
-        <span>Vigilancia</span><span style="color:#e2e8f0;text-align:right">${p.vigilancia}</span>
-        <span>Iluminación</span><span style="color:#e2e8f0;text-align:right">${p.iluminacion}</span>
-        <span>Flujo personas</span><span style="color:#e2e8f0;text-align:right">${p.flujoPersonas}</span>
-      </div>
-      <p style="margin:6px 0 0;color:#475569;font-size:10px">Clic para seleccionar</p>
-    </div>`;
-}
-
-async function loadEnrichedGeojson(): Promise<GeoJSON.FeatureCollection> {
-  const [geojsonRes, riskRes] = await Promise.all([
-    fetch("/data/comunas-cali.geojson"),
-    fetch("/data/comunas-risk.json"),
-  ]);
-
-  if (!geojsonRes.ok) throw new Error(`GeoJSON fetch failed: ${geojsonRes.status}`);
-  if (!riskRes.ok) throw new Error(`Risk data fetch failed: ${riskRes.status}`);
-
-  const geojson = (await geojsonRes.json()) as GeoJSON.FeatureCollection;
-  const riskList = (await riskRes.json()) as CommuneRiskData[];
-
-  const riskMap = new Map<number, CommuneRiskData>(
-    riskList.map((r) => [r.comuna, r])
-  );
-
-  return {
-    ...geojson,
-    features: geojson.features.map((feature) => {
-      const props = feature.properties as {
-        comuna: number;
-        nombre: string;
-        shape_leng?: number;
-        shape_area?: number;
-      };
-      const risk = riskMap.get(props.comuna) ?? { comuna: props.comuna, ...RISK_FALLBACK };
-      return { ...feature, properties: { ...props, ...risk } satisfies EnrichedFeatureProperties };
-    }),
-  };
-}
-
-function normalizeProps(raw: Partial<EnrichedFeatureProperties>): EnrichedFeatureProperties {
-  const level = isRiskLevel(raw.riskLevel) ? raw.riskLevel : "low";
-  return {
-    comuna:        raw.comuna        ?? 0,
-    nombre:        raw.nombre        ?? "Comuna",
-    shape_leng:    raw.shape_leng,
-    shape_area:    raw.shape_area,
-    riskScore:     raw.riskScore     ?? 0,
-    riskLevel:     level,
-    criminalidad:  raw.criminalidad  ?? 0,
-    seguridad:     raw.seguridad     ?? 0,
-    vigilancia:    raw.vigilancia    ?? 0,
-    iluminacion:   raw.iluminacion   ?? 0,
-    flujoPersonas: raw.flujoPersonas ?? 0,
-  };
 }
 
 export default function MapLibreView({ onCommuneSelect }: MapLibreViewProps) {
@@ -202,7 +113,7 @@ export default function MapLibreView({ onCommuneSelect }: MapLibreViewProps) {
             if (!e.features?.length) return;
             const raw = e.features[0].properties as Partial<EnrichedFeatureProperties>;
             if (!raw?.nombre) return;
-            popup.setLngLat(e.lngLat).setHTML(buildPopupHtml(normalizeProps(raw))).addTo(map);
+            popup.setLngLat(e.lngLat).setHTML(buildCommunePopupHtml(normalizeCommuneProperties(raw))).addTo(map);
           });
 
           map.on("mouseleave", "comunas-fill", () => {
@@ -213,7 +124,7 @@ export default function MapLibreView({ onCommuneSelect }: MapLibreViewProps) {
           map.on("click", "comunas-fill", (e) => {
             if (!e.features?.length) return;
             const raw = e.features[0].properties as Partial<EnrichedFeatureProperties>;
-            const props = normalizeProps(raw);
+            const props = normalizeCommuneProperties(raw);
             map.setFilter("selected-commune-outline", [
               "==",
               ["get", "comuna"],
