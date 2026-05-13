@@ -79,14 +79,25 @@ export default function RouteSummary({ route }: { route: RouteAnalysis | null })
         </p>
       </div>
 
-      <div className="mt-3 p-3 rounded-xl bg-amber-500/5 border border-amber-500/15">
-        <p className="text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1">
-          Modo demostración
-        </p>
-        <p className="text-[11px] text-slate-400 leading-relaxed">
-          Ruta simulada para probar visualización. La geometría real será calculada por OpenRouteService en una fase posterior.
-        </p>
-      </div>
+      {route.mode === "demo" ? (
+        <div className="mt-3 p-3 rounded-xl bg-amber-500/5 border border-amber-500/15">
+          <p className="text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1">
+            Modo demostración
+          </p>
+          <p className="text-[11px] text-slate-400 leading-relaxed">
+            Ruta simulada para probar visualización. La geometría real será calculada por OpenRouteService en una fase posterior.
+          </p>
+        </div>
+      ) : (
+        <div className="mt-3 p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/15">
+          <p className="text-[10px] font-mono text-cyan-400 uppercase tracking-widest mb-1">
+            Modo real
+          </p>
+          <p className="text-[11px] text-slate-400 leading-relaxed">
+            Geometría real por calles via OpenRouteService. Los valores de riesgo son experimentales.
+          </p>
+        </div>
+      )}
     </div>
   );
 }

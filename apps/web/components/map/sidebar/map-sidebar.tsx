@@ -15,6 +15,8 @@ interface MapSidebarProps {
   onAnalyzeRoute: () => void;
   routeError: string | null;
   isAnalyzingRoute: boolean;
+  routeMode: "demo" | "real";
+  onRouteModeChange: (mode: "demo" | "real") => void;
 }
 
 export default function MapSidebar({
@@ -27,6 +29,8 @@ export default function MapSidebar({
   onAnalyzeRoute,
   routeError,
   isAnalyzingRoute,
+  routeMode,
+  onRouteModeChange,
 }: MapSidebarProps) {
   return (
     <aside className="w-full md:w-80 md:shrink-0 flex flex-col bg-[#060d1a] border-r border-white/5 md:h-full overflow-y-auto">
@@ -39,6 +43,8 @@ export default function MapSidebar({
         onAnalyzeRoute={onAnalyzeRoute}
         routeError={routeError}
         isAnalyzingRoute={isAnalyzingRoute}
+        routeMode={routeMode}
+        onRouteModeChange={onRouteModeChange}
       />
       <RouteSummary route={route} />
       <CommuneDetail selected={selected} />

@@ -56,6 +56,7 @@ export default function MapLayout() {
   const [destination, setDestination] = useState("Aguablanca, Cali");
   const [routeError, setRouteError] = useState<string | null>(null);
   const [isAnalyzingRoute, setIsAnalyzingRoute] = useState(false);
+  const [routeMode, setRouteMode] = useState<"demo" | "real">("demo");
 
   async function handleAnalyzeRoute() {
     const validation = validateRouteInput(origin, destination);
@@ -73,12 +74,19 @@ export default function MapLayout() {
       const analyzedRoute = await analyzeRoute({
         origin: origin.trim(),
         destination: destination.trim(),
-        mode: "demo",
+        mode: routeMode,
       });
       setRoute(analyzedRoute);
-    } catch {
+    } catch (err) {
       setRoute(null);
-      setRouteError("No se pudo analizar la ruta. Intenta nuevamente.");
+      if (routeMode === "real") {
+        const message = err instanceof Error ? err.message : null;
+        setRouteError(
+          message ?? "No se pudo calcular la ruta real. Verifica las direcciones e intenta nuevamente.",
+        );
+      } else {
+        setRouteError("No se pudo analizar la ruta. Intenta nuevamente.");
+      }
     } finally {
       setIsAnalyzingRoute(false);
     }
@@ -96,6 +104,8 @@ export default function MapLayout() {
         onAnalyzeRoute={handleAnalyzeRoute}
         routeError={routeError}
         isAnalyzingRoute={isAnalyzingRoute}
+        routeMode={routeMode}
+        onRouteModeChange={setRouteMode}
       />
       <MapArea onCommuneSelect={(c) => setSelected(c)} route={route} />
     </div>
