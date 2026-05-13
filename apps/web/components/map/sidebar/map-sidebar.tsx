@@ -14,6 +14,7 @@ interface MapSidebarProps {
   onDestinationChange: (value: string) => void;
   onAnalyzeRoute: () => void;
   routeError: string | null;
+  isAnalyzingRoute: boolean;
 }
 
 export default function MapSidebar({
@@ -25,6 +26,7 @@ export default function MapSidebar({
   onDestinationChange,
   onAnalyzeRoute,
   routeError,
+  isAnalyzingRoute,
 }: MapSidebarProps) {
   return (
     <aside className="w-full md:w-80 md:shrink-0 flex flex-col bg-[#060d1a] border-r border-white/5 md:h-full overflow-y-auto">
@@ -36,6 +38,7 @@ export default function MapSidebar({
         onDestinationChange={onDestinationChange}
         onAnalyzeRoute={onAnalyzeRoute}
         routeError={routeError}
+        isAnalyzingRoute={isAnalyzingRoute}
       />
       <RouteSummary route={route} />
       <CommuneDetail selected={selected} />

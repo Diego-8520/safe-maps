@@ -7,6 +7,7 @@ interface RouteInputsProps {
   onDestinationChange: (value: string) => void;
   onAnalyzeRoute: () => void;
   routeError: string | null;
+  isAnalyzingRoute: boolean;
 }
 
 export default function RouteInputs({
@@ -16,6 +17,7 @@ export default function RouteInputs({
   onDestinationChange,
   onAnalyzeRoute,
   routeError,
+  isAnalyzingRoute,
 }: RouteInputsProps) {
   return (
     <div className="px-5 py-5 border-b border-white/5 space-y-3">
@@ -30,7 +32,8 @@ export default function RouteInputs({
             value={origin}
             onChange={(e) => onOriginChange(e.target.value)}
             placeholder="Ej: Universidad del Valle, Cali"
-            className="w-full pl-9 pr-3 py-2.5 bg-white/4 border border-cyan-500/20 rounded-lg text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/50 transition-colors"
+            disabled={isAnalyzingRoute}
+            className="w-full pl-9 pr-3 py-2.5 bg-white/4 border border-cyan-500/20 rounded-lg text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-cyan-500/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
       </div>
@@ -56,7 +59,8 @@ export default function RouteInputs({
             value={destination}
             onChange={(e) => onDestinationChange(e.target.value)}
             placeholder="Ej: Terminal de Transportes, Cali"
-            className="w-full pl-9 pr-3 py-2.5 bg-white/4 border border-emerald-500/20 rounded-lg text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-emerald-500/50 transition-colors"
+            disabled={isAnalyzingRoute}
+            className="w-full pl-9 pr-3 py-2.5 bg-white/4 border border-emerald-500/20 rounded-lg text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:border-emerald-500/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           />
         </div>
       </div>
@@ -64,10 +68,11 @@ export default function RouteInputs({
       <button
         type="button"
         onClick={onAnalyzeRoute}
-        className="w-full flex items-center justify-center gap-2 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-[#050a14] font-semibold rounded-lg text-sm transition-colors duration-200 mt-1"
+        disabled={isAnalyzingRoute}
+        className="w-full flex items-center justify-center gap-2 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-[#050a14] font-semibold rounded-lg text-sm transition-colors duration-200 mt-1 disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:bg-cyan-500"
       >
         <IconRoute className="w-4 h-4" />
-        Analizar ruta
+        {isAnalyzingRoute ? "Analizando..." : "Analizar ruta"}
       </button>
 
       {routeError && (

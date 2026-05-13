@@ -6,7 +6,7 @@ import RiskLegend from "@/components/map/risk-legend";
 import MapSidebar from "@/components/map/sidebar/map-sidebar";
 import type { EnrichedFeatureProperties } from "@/components/map/types";
 import type { RouteAnalysis } from "@/components/map/routes/route-types";
-import { analyzeDemoRoute } from "@/components/map/routes/services/analyze-demo-route";
+import { analyzeRoute } from "@/components/map/routes/providers/route-provider";
 import { validateRouteInput } from "@/components/map/routes/services/route-validation";
 
 function MapToolbar() {
@@ -55,8 +55,9 @@ export default function MapLayout() {
   const [origin, setOrigin] = useState("Centro, Cali");
   const [destination, setDestination] = useState("Aguablanca, Cali");
   const [routeError, setRouteError] = useState<string | null>(null);
+  const [isAnalyzingRoute, setIsAnalyzingRoute] = useState(false);
 
-  function handleAnalyzeRoute() {
+  async function handleAnalyzeRoute() {
     const validation = validateRouteInput(origin, destination);
 
     if (!validation.valid) {
@@ -65,14 +66,22 @@ export default function MapLayout() {
       return;
     }
 
+    setIsAnalyzingRoute(true);
     setRouteError(null);
 
-    const analyzedRoute = analyzeDemoRoute({
-      origin: origin.trim(),
-      destination: destination.trim(),
-    });
-
-    setRoute(analyzedRoute);
+    try {
+      const analyzedRoute = await analyzeRoute({
+        origin: origin.trim(),
+        destination: destination.trim(),
+        mode: "demo",
+      });
+      setRoute(analyzedRoute);
+    } catch {
+      setRoute(null);
+      setRouteError("No se pudo analizar la ruta. Intenta nuevamente.");
+    } finally {
+      setIsAnalyzingRoute(false);
+    }
   }
 
   return (
@@ -86,6 +95,7 @@ export default function MapLayout() {
         onDestinationChange={setDestination}
         onAnalyzeRoute={handleAnalyzeRoute}
         routeError={routeError}
+        isAnalyzingRoute={isAnalyzingRoute}
       />
       <MapArea onCommuneSelect={(c) => setSelected(c)} route={route} />
     </div>
