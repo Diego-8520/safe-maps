@@ -7,14 +7,15 @@ import CommuneDetail from "./commune-detail";
 
 interface MapSidebarProps {
   selected: EnrichedFeatureProperties | null;
-  route: RouteAnalysis;
+  route: RouteAnalysis | null;
+  onAnalyzeRoute: () => void;
 }
 
-export default function MapSidebar({ selected, route }: MapSidebarProps) {
+export default function MapSidebar({ selected, route, onAnalyzeRoute }: MapSidebarProps) {
   return (
     <aside className="w-full md:w-80 md:shrink-0 flex flex-col bg-[#060d1a] border-r border-white/5 md:h-full overflow-y-auto">
       <SidebarHeader />
-      <RouteInputs />
+      <RouteInputs onAnalyzeRoute={onAnalyzeRoute} />
       <RouteSummary route={route} />
       <CommuneDetail selected={selected} />
     </aside>

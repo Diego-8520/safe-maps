@@ -10,23 +10,19 @@ import { buildRouteGeoJson } from "./routes/route-utils";
 
 interface MapLibreViewProps {
   onCommuneSelect?: (commune: EnrichedFeatureProperties) => void;
-  route?: RouteAnalysis;
+  route?: RouteAnalysis | null;
 }
 
 export default function MapLibreView({ onCommuneSelect, route }: MapLibreViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const onSelectRef = useRef(onCommuneSelect);
-  const routeRef = useRef(route);
 
   useEffect(() => {
     onSelectRef.current = onCommuneSelect;
   }, [onCommuneSelect]);
 
-  useEffect(() => {
-    routeRef.current = route;
-  }, [route]);
-
+  // Map initialization — runs once
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
@@ -101,41 +97,8 @@ export default function MapLibreView({ onCommuneSelect, route }: MapLibreViewPro
             });
           }
 
-          // --- Layer 3: demo-route-line (above communes, below selected outline) ---
-          if (routeRef.current && !map.getSource("demo-route")) {
-            map.addSource("demo-route", {
-              type: "geojson",
-              data: buildRouteGeoJson(routeRef.current),
-            });
-            map.addLayer({
-              id: "demo-route-line",
-              type: "line",
-              source: "demo-route",
-              layout: {
-                "line-cap": "round",
-                "line-join": "round",
-              },
-              paint: {
-                "line-color": [
-                  "match",
-                  ["get", "accumulatedRiskLevel"],
-                  "low",    "#22c55e",
-                  "medium", "#f59e0b",
-                  "high",   "#ef4444",
-                  "#38bdf8",
-                ],
-                "line-width": [
-                  "interpolate", ["linear"], ["zoom"],
-                  10, 3,
-                  12, 5,
-                  14, 7,
-                ],
-                "line-opacity": 0.95,
-              },
-            });
-          }
-
-          // --- Layer 4: selected-commune-outline (always on top) ---
+          // --- Layer 3: selected-commune-outline (always on top) ---
+          // demo-route-line is inserted before this layer when route is set.
           if (!map.getLayer("selected-commune-outline")) {
             map.addLayer({
               id: "selected-commune-outline",
@@ -191,6 +154,73 @@ export default function MapLibreView({ onCommuneSelect, route }: MapLibreViewPro
       mapRef.current = null;
     };
   }, []);
+
+  // Route layer — reactive to route prop changes
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    function applyRoute() {
+      if (!map) return;
+
+      if (!route) {
+        if (map.getLayer("demo-route-line")) map.removeLayer("demo-route-line");
+        if (map.getSource("demo-route")) map.removeSource("demo-route");
+        return;
+      }
+
+      const geojson = buildRouteGeoJson(route);
+
+      if (map.getSource("demo-route")) {
+        (map.getSource("demo-route") as maplibregl.GeoJSONSource).setData(geojson);
+      } else {
+        map.addSource("demo-route", { type: "geojson", data: geojson });
+      }
+
+      if (!map.getLayer("demo-route-line")) {
+        // Insert before selected-commune-outline so highlight stays on top
+        const beforeId = map.getLayer("selected-commune-outline")
+          ? "selected-commune-outline"
+          : undefined;
+
+        map.addLayer(
+          {
+            id: "demo-route-line",
+            type: "line",
+            source: "demo-route",
+            layout: {
+              "line-cap": "round",
+              "line-join": "round",
+            },
+            paint: {
+              "line-color": [
+                "match",
+                ["get", "accumulatedRiskLevel"],
+                "low",    "#22c55e",
+                "medium", "#f59e0b",
+                "high",   "#ef4444",
+                "#38bdf8",
+              ],
+              "line-width": [
+                "interpolate", ["linear"], ["zoom"],
+                10, 3,
+                12, 5,
+                14, 7,
+              ],
+              "line-opacity": 0.95,
+            },
+          },
+          beforeId,
+        );
+      }
+    }
+
+    if (map.isStyleLoaded()) {
+      applyRoute();
+    } else {
+      map.once("load", applyRoute);
+    }
+  }, [route]);
 
   return <div ref={containerRef} className="absolute inset-0 w-full h-full" />;
 }

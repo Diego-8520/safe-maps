@@ -18,7 +18,26 @@ function RiskBadge({ level }: { level: RouteRiskLevel }) {
   );
 }
 
-export default function RouteSummary({ route }: { route: RouteAnalysis }) {
+function EmptyState() {
+  return (
+    <div className="px-5 py-5 border-b border-white/5">
+      <div className="flex items-center gap-2 mb-4">
+        <IconShield className="w-4 h-4 text-slate-600" />
+        <p className="text-[10px] font-mono text-slate-600 uppercase tracking-widest">
+          Sin ruta analizada
+        </p>
+      </div>
+      <p className="text-[11px] text-slate-600 leading-relaxed">
+        Presiona <span className="text-slate-500 font-mono">Analizar ruta</span> para visualizar
+        una ruta demo con riesgo acumulado.
+      </p>
+    </div>
+  );
+}
+
+export default function RouteSummary({ route }: { route: RouteAnalysis | null }) {
+  if (!route) return <EmptyState />;
+
   return (
     <div className="px-5 py-5 border-b border-white/5">
       <div className="flex items-center gap-2 mb-4">
@@ -29,28 +48,28 @@ export default function RouteSummary({ route }: { route: RouteAnalysis }) {
       </div>
 
       <div className="space-y-2.5">
-        <div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+        <div className="flex items-center justify-between p-3 rounded-xl bg-white/3 border border-white/6">
           <span className="text-xs text-slate-400">Riesgo acumulado final</span>
           <div className="flex items-center gap-2">
             <span className="text-xs font-mono text-slate-500">{route.finalRiskScore}/100</span>
             <RiskBadge level={route.finalRiskLevel} />
           </div>
         </div>
-        <div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+        <div className="flex items-center justify-between p-3 rounded-xl bg-white/3 border border-white/6">
           <span className="text-xs text-slate-400">Distancia</span>
           <span className="text-xs font-mono text-slate-200">{formatDistanceKm(route.totalDistanceMeters)}</span>
         </div>
-        <div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+        <div className="flex items-center justify-between p-3 rounded-xl bg-white/3 border border-white/6">
           <span className="text-xs text-slate-400">Tiempo estimado</span>
           <span className="text-xs font-mono text-slate-200">{route.estimatedDurationMinutes} min</span>
         </div>
-        <div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+        <div className="flex items-center justify-between p-3 rounded-xl bg-white/3 border border-white/6">
           <span className="text-xs text-slate-400">Origen</span>
-          <span className="text-xs font-mono text-slate-500 truncate max-w-[140px] text-right italic">demo</span>
+          <span className="text-xs font-mono text-slate-500 truncate max-w-35 text-right italic">demo</span>
         </div>
-        <div className="flex items-center justify-between p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+        <div className="flex items-center justify-between p-3 rounded-xl bg-white/3 border border-white/6">
           <span className="text-xs text-slate-400">Destino</span>
-          <span className="text-xs font-mono text-slate-500 truncate max-w-[140px] text-right italic">demo</span>
+          <span className="text-xs font-mono text-slate-500 truncate max-w-35 text-right italic">demo</span>
         </div>
       </div>
 

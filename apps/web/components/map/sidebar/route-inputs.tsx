@@ -1,6 +1,10 @@
 import { IconPin, IconFlag, IconRoute } from "@/components/map/ui/map-icons";
 
-export default function RouteInputs() {
+interface RouteInputsProps {
+  onAnalyzeRoute: () => void;
+}
+
+export default function RouteInputs({ onAnalyzeRoute }: RouteInputsProps) {
   return (
     <div className="px-5 py-5 border-b border-white/5 space-y-3">
       <div>
@@ -43,11 +47,16 @@ export default function RouteInputs() {
 
       <button
         type="button"
+        onClick={onAnalyzeRoute}
         className="w-full flex items-center justify-center gap-2 py-2.5 bg-cyan-500 hover:bg-cyan-400 text-[#050a14] font-semibold rounded-lg text-sm transition-colors duration-200 mt-1"
       >
         <IconRoute className="w-4 h-4" />
         Analizar ruta
       </button>
+
+      <p className="text-[10px] font-mono text-slate-600 text-center">
+        Modo demo · usa origen y destino simulados
+      </p>
     </div>
   );
 }

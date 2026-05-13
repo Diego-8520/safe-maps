@@ -36,7 +36,7 @@ function MapArea({
   route,
 }: {
   onCommuneSelect: (c: EnrichedFeatureProperties) => void;
-  route: RouteAnalysis;
+  route: RouteAnalysis | null;
 }) {
   return (
     <main className="flex-1 relative min-h-[55vh] md:min-h-0 overflow-hidden">
@@ -50,11 +50,15 @@ function MapArea({
 
 export default function MapLayout() {
   const [selected, setSelected] = useState<EnrichedFeatureProperties | null>(null);
-  const route = MOCK_ROUTE_ANALYSIS;
+  const [route, setRoute] = useState<RouteAnalysis | null>(null);
+
+  function handleAnalyzeRoute() {
+    setRoute(MOCK_ROUTE_ANALYSIS);
+  }
 
   return (
     <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-hidden">
-      <MapSidebar selected={selected} route={route} />
+      <MapSidebar selected={selected} route={route} onAnalyzeRoute={handleAnalyzeRoute} />
       <MapArea onCommuneSelect={(c) => setSelected(c)} route={route} />
     </div>
   );
