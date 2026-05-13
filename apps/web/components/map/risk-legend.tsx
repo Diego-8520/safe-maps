@@ -1,8 +1,7 @@
-const LEVELS = [
-  { label: "Bajo",  dot: "#34d399", text: "#6ee7b7" },
-  { label: "Medio", dot: "#fbbf24", text: "#fcd34d" },
-  { label: "Alto",  dot: "#f87171", text: "#fca5a5" },
-] as const;
+import { RISK_COLORS, RISK_LABELS } from "./risk-utils";
+import type { RiskLevel } from "./types";
+
+const LEVELS: RiskLevel[] = ["low", "medium", "high"];
 
 export default function RiskLegend() {
   return (
@@ -11,14 +10,14 @@ export default function RiskLegend() {
         Nivel de riesgo
       </p>
       <div className="space-y-2">
-        {LEVELS.map(({ label, dot, text }) => (
-          <div key={label} className="flex items-center gap-2">
+        {LEVELS.map((level) => (
+          <div key={level} className="flex items-center gap-2">
             <span
               className="w-2.5 h-2.5 rounded-sm shrink-0"
-              style={{ background: dot }}
+              style={{ background: RISK_COLORS[level] }}
             />
-            <span className="text-[11px] font-mono" style={{ color: text }}>
-              {label}
+            <span className="text-[11px] font-mono" style={{ color: RISK_COLORS[level] }}>
+              {RISK_LABELS[level]}
             </span>
           </div>
         ))}
