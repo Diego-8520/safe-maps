@@ -1,3 +1,5 @@
+import type { RiskModelMetadata } from "@/lib/types/model-version";
+
 export const EULER_V1_MODEL_CODE = "euler-v1" as const;
 
 export const EULER_V1_MODEL_NAME = "Euler v1 — Modelo diferencial lineal";
@@ -34,4 +36,19 @@ export const EULER_V1_VARIABLE_META = [
   { symbol: "F", field: "flujoPersonas", coefficient: "h", value: 8,  direction: "increase" },
 ] as const;
 
-export type VariableDirection = "increase" | "decrease";
+// VariableDirection canonical definition lives in lib/types/model-version.
+// Re-exported here for backward compatibility with existing imports.
+export type { VariableDirection } from "@/lib/types/model-version";
+
+/**
+ * Bundled model descriptor conforming to RiskModelMetadata.
+ * Use this when you need the full model profile (UI panels, model registry, docs generation).
+ * Use EULER_V1_COEFFICIENTS directly when you only need the coefficient values.
+ */
+export const EULER_V1_MODEL_METADATA: RiskModelMetadata = {
+  version: EULER_V1_MODEL_CODE,
+  name: EULER_V1_MODEL_NAME,
+  description: EULER_V1_MODEL_DESCRIPTION,
+  coefficients: { ...EULER_V1_COEFFICIENTS },
+  variables: [...EULER_V1_VARIABLE_META],
+};

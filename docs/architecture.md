@@ -167,6 +167,21 @@ El join espacial actual (ray-casting JS) es correcto para el volumen actual. Pos
 
 ---
 
+## Preparación de la capa de acceso a datos
+
+El acceso a los archivos de datos locales está ahora abstraído detrás de interfaces de repository:
+
+- `CommuneRepository` — provee geometría de comunas como `CommuneFeature[]`
+- `CommuneRiskRepository` — provee perfiles de riesgo como `CommuneRisk[]`
+
+Las implementaciones actuales (`localCommuneRepository`, `localCommuneRiskRepository`) delegan a los loaders existentes. El pipeline principal (`normalize-openroute-route.ts`) importa únicamente los singletons de repository — no los loaders directamente.
+
+Para migrar a Supabase: crear `SupabaseCommuneRepository` y `SupabaseCommuneRiskRepository` implementando las mismas interfaces, y sustituir los singletons. El pipeline no cambia.
+
+Ver detalle en [docs/repositories.md](repositories.md) y [docs/data-architecture.md](data-architecture.md).
+
+---
+
 ## Limitaciones actuales de arquitectura
 
 | Limitación | Impacto | Solución futura |

@@ -1,10 +1,10 @@
 import type { RouteAnalysis, RouteSegment, RouteCoordinate } from "@/components/map/routes/route-types";
 import type { OrsDirectionsResponse } from "@/lib/openroute/openroute-types";
 import { segmentByDistance } from "@/lib/routes/route-segmentation";
-import { loadCommunesGeoJSON } from "@/lib/geo/load-communes-geojson";
 import { findCommuneForPoint } from "@/lib/geo/find-commune-for-point";
-import { loadCommunesRisk } from "@/lib/risk/load-communes-risk";
 import { findRiskByCommune } from "@/lib/risk/find-risk-by-commune";
+import { localCommuneRepository } from "@/lib/repositories/local-commune-repository";
+import { localCommuneRiskRepository } from "@/lib/repositories/local-commune-risk-repository";
 import { calculateEulerAccumulatedRouteRisk } from "@/lib/risk/euler-accumulated-route-risk";
 
 function toRouteCoordinates(coords: [number, number][]): RouteCoordinate[] {
@@ -38,14 +38,14 @@ export async function normalizeOpenRouteResponse(
 
   const chunks = segmentByDistance(allCoords);
 
-  const [communesGeoJSON, riskData] = await Promise.all([
-    loadCommunesGeoJSON(),
-    loadCommunesRisk(),
+  const [features, riskData] = await Promise.all([
+    localCommuneRepository.getFeatures(),
+    localCommuneRiskRepository.getAll(),
   ]);
 
   const rawSegments: RouteSegment[] = chunks.map((chunk, index) => {
     const midpoint = midpointOf(chunk.coords);
-    const communeId = findCommuneForPoint(midpoint, communesGeoJSON.features);
+    const communeId = findCommuneForPoint(midpoint, features);
     const { localRiskScore, localRiskLevel } = findRiskByCommune(communeId, riskData);
 
     return {
