@@ -26,3 +26,6 @@ env/
 
 # build
 dist/
+
+# local AI tooling
+.claude/
