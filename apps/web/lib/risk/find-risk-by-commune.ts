@@ -1,5 +1,5 @@
 import type { RouteRiskLevel } from "@/lib/types/risk";
-import type { CommuneRisk } from "./risk-types";
+import type { CommuneRisk } from "@/lib/types/commune-risk";
 
 const FALLBACK_RISK_SCORE = 50;
 const FALLBACK_RISK_LEVEL: RouteRiskLevel = "medium";

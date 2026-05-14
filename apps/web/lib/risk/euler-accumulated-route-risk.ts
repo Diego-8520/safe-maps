@@ -11,7 +11,7 @@
  */
 
 import type { RouteAnalysis } from "@/components/map/routes/route-types";
-import type { CommuneRisk } from "@/lib/risk/risk-types";
+import type { CommuneRisk } from "@/lib/types/commune-risk";
 import { buildEulerRiskSegmentsFromRouteSegments } from "@/lib/risk/build-euler-risk-input";
 import { calculateEulerRiskEvolution } from "@/lib/risk/euler-risk-integrator";
 import { scoreToRiskLevel } from "@/lib/risk/risk-level";

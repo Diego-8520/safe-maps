@@ -1,6 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { CommuneRisk } from "./risk-types";
+import type { CommuneRisk } from "@/lib/types/commune-risk";
 
 let cache: CommuneRisk[] | null = null;
 

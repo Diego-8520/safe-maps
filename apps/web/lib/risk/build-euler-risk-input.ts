@@ -7,7 +7,7 @@
  */
 
 import type { RouteSegment } from "@/components/map/routes/route-types";
-import type { CommuneRisk } from "@/lib/risk/risk-types";
+import type { CommuneRisk } from "@/lib/types/commune-risk";
 import type { EulerRiskSegmentInput } from "@/lib/risk/euler-risk-integrator";
 import type { RiskDerivativeInput } from "@/lib/risk/risk-derivative";
 

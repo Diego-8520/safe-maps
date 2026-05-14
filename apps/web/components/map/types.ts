@@ -1,15 +1,10 @@
-export type RiskLevel = "low" | "medium" | "high";
+import type { RouteRiskLevel } from "@/lib/types/risk";
+import type { CommuneRisk } from "@/lib/types/commune-risk";
 
-export interface CommuneRiskData {
-  comuna: number;
-  riskScore: number;
-  riskLevel: RiskLevel;
-  criminalidad: number;
-  seguridad: number;
-  vigilancia: number;
-  iluminacion: number;
-  flujoPersonas: number;
-}
+// Aliases for backward compatibility with existing component imports.
+// The canonical definitions live in lib/types/.
+export type RiskLevel = RouteRiskLevel;
+export type CommuneRiskData = CommuneRisk;
 
 export interface CommuneFeatureProperties {
   comuna: number;
