@@ -27,5 +27,15 @@ env/
 # build
 dist/
 
+# raw data files — may contain real data, never commit
+data/raw/*.xlsx
+data/raw/*.csv
+data/raw/*.xls
+
+# processed and seed outputs — generated, not committed
+# (remove these lines if you want to commit the generated files)
+# data/processed/*.json
+# data/seeds/*.sql
+
 # local AI tooling
 .claude/
