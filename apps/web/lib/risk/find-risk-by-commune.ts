@@ -1,4 +1,4 @@
-import type { RouteRiskLevel } from "@/components/map/routes/route-types";
+import type { RouteRiskLevel } from "@/lib/types/risk";
 import type { CommuneRisk } from "./risk-types";
 
 const FALLBACK_RISK_SCORE = 50;

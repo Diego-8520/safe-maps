@@ -1,4 +1,5 @@
-export type RouteRiskLevel = "low" | "medium" | "high";
+import type { RouteRiskLevel } from "@/lib/types/risk";
+export type { RouteRiskLevel };
 
 export interface RouteCoordinate {
   lng: number;

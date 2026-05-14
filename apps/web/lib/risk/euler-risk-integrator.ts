@@ -8,9 +8,6 @@
  *
  * where dR/dx comes from calculateRiskDerivative in risk-derivative.ts.
  *
- * NOT integrated into the production pipeline yet.
- * Next step: replace calculatePreliminaryAccumulatedRisk in accumulated-risk.ts
- * with a call to calculateEulerRiskEvolution, mapping RouteSegment → EulerRiskSegmentInput.
  */
 
 import {
@@ -18,7 +15,7 @@ import {
   type RiskDerivativeInput,
 } from "@/lib/risk/risk-derivative";
 import { scoreToRiskLevel } from "@/lib/risk/risk-level";
-import type { RouteRiskLevel } from "@/components/map/routes/route-types";
+import type { RouteRiskLevel } from "@/lib/types/risk";
 
 // ---------------------------------------------------------------------------
 // Public types

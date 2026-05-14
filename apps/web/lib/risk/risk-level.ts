@@ -1,4 +1,4 @@
-import type { RouteRiskLevel } from "@/components/map/routes/route-types";
+import type { RouteRiskLevel } from "@/lib/types/risk";
 
 // Thresholds derived from comunas-risk.json distribution:
 // < 40 → low, 40–69 → medium, ≥ 70 → high.

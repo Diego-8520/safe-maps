@@ -4,9 +4,6 @@
  * Resolves each segment's communeId against the CommuneRisk dataset to extract
  * the urban variables required by calculateRiskDerivative (risk-derivative.ts).
  *
- * NOT integrated into the production pipeline yet.
- * Next step: call this inside the Euler integration path before invoking
- * calculateEulerRiskEvolution (euler-risk-integrator.ts).
  */
 
 import type { RouteSegment } from "@/components/map/routes/route-types";

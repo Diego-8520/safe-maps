@@ -1,4 +1,4 @@
-import type { RouteRiskLevel } from "@/components/map/routes/route-types";
+import type { RouteRiskLevel } from "@/lib/types/risk";
 
 export interface CommuneRisk {
   comuna: number;

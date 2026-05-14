@@ -16,9 +16,6 @@
  * Return unit: risk-points per kilometer.
  * Intended Euler usage: R(x + Δx) = clamp(R(x) + dR/dx · Δx_km, 0, 100)
  *
- * NOT integrated into the production pipeline yet.
- * Next step: replace calculatePreliminaryAccumulatedRisk with an Euler integrator
- * that calls this function per segment.
  */
 
 export interface RiskDerivativeInput {
