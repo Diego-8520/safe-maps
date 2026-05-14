@@ -3,6 +3,7 @@ import type { RouteAnalysis } from "@/components/map/routes/route-types";
 import SidebarHeader from "./sidebar-header";
 import RouteInputs from "./route-inputs";
 import RouteSummary from "./route-summary";
+import RouteSegmentsPanel from "./route-segments-panel";
 import CommuneDetail from "./commune-detail";
 
 interface MapSidebarProps {
@@ -47,6 +48,7 @@ export default function MapSidebar({
         onRouteModeChange={onRouteModeChange}
       />
       <RouteSummary route={route} />
+      <RouteSegmentsPanel route={route} />
       <CommuneDetail selected={selected} />
     </aside>
   );
