@@ -4,6 +4,7 @@ import SidebarHeader from "./sidebar-header";
 import RouteInputs from "./route-inputs";
 import RouteSummary from "./route-summary";
 import RouteRiskChart from "./route-risk-chart";
+import EulerModelPanel from "./euler-model-panel";
 import RouteSegmentsPanel from "./route-segments-panel";
 import CommuneDetail from "./commune-detail";
 
@@ -44,6 +45,7 @@ export default function MapSidebar({
       />
       <RouteSummary route={route} />
       <RouteRiskChart route={route} />
+      {route && <EulerModelPanel />}
       <RouteSegmentsPanel route={route} />
       <CommuneDetail selected={selected} />
     </aside>
