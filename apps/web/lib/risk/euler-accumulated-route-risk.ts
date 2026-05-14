@@ -16,8 +16,6 @@ import { buildEulerRiskSegmentsFromRouteSegments } from "@/lib/risk/build-euler-
 import { calculateEulerRiskEvolution } from "@/lib/risk/euler-risk-integrator";
 import { scoreToRiskLevel } from "@/lib/risk/risk-level";
 
-const DEFAULT_INITIAL_RISK_SCORE = 50;
-
 /**
  * Computes Euler-integrated accumulated risk for every segment in a RouteAnalysis.
  *
@@ -25,20 +23,25 @@ const DEFAULT_INITIAL_RISK_SCORE = 50;
  *
  * @param routeAnalysis   Route with segments and localRiskScore already assigned.
  * @param riskData        Full CommuneRisk dataset (e.g. from loadCommunesRisk()).
- * @param initialRiskScore Starting accumulated risk (default 50 — neutral mid-range).
+ * @param initialRiskScore Starting accumulated risk. Defaults to the first segment's
+ *                         localRiskScore so the route starts at the real local risk,
+ *                         not an artificial mid-range value.
  * @returns               New RouteAnalysis with Euler-derived accumulated risk values.
  */
 export function calculateEulerAccumulatedRouteRisk(
   routeAnalysis: RouteAnalysis,
   riskData: CommuneRisk[],
-  initialRiskScore = DEFAULT_INITIAL_RISK_SCORE,
+  initialRiskScore?: number,
 ): RouteAnalysis {
+  const resolvedInitialRiskScore =
+    initialRiskScore ?? routeAnalysis.segments[0]?.localRiskScore ?? 50;
+
   const eulerSegmentsInput = buildEulerRiskSegmentsFromRouteSegments(
     routeAnalysis.segments,
     riskData,
   );
 
-  const evolution = calculateEulerRiskEvolution(initialRiskScore, eulerSegmentsInput);
+  const evolution = calculateEulerRiskEvolution(resolvedInitialRiskScore, eulerSegmentsInput);
 
   const segments = routeAnalysis.segments.map((segment, index) => {
     const eulerSegment = evolution.segments[index];

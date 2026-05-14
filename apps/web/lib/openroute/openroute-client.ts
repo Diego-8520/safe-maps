@@ -19,6 +19,12 @@ function getApiKey(): string {
 
 function enrichAddress(address: string): string {
   const lower = address.toLowerCase();
+
+  // Normalize known ambiguous campus queries that geocode incorrectly without a full address.
+  if (lower.includes("universidad del valle") || lower.includes("univalle")) {
+    return "Universidad del Valle, Calle 13 #100-00, Cali, Colombia";
+  }
+
   if (lower.includes("colombia")) return address;
   if (lower.includes("cali")) return `${address}, Colombia`;
   return `${address}, Cali, Colombia`;

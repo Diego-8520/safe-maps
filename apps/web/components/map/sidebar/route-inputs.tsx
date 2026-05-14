@@ -8,8 +8,6 @@ interface RouteInputsProps {
   onAnalyzeRoute: () => void;
   routeError: string | null;
   isAnalyzingRoute: boolean;
-  routeMode: "demo" | "real";
-  onRouteModeChange: (mode: "demo" | "real") => void;
 }
 
 export default function RouteInputs({
@@ -20,44 +18,9 @@ export default function RouteInputs({
   onAnalyzeRoute,
   routeError,
   isAnalyzingRoute,
-  routeMode,
-  onRouteModeChange,
 }: RouteInputsProps) {
   return (
     <div className="px-5 py-5 border-b border-white/5 space-y-3">
-      <div>
-        <label className="text-[10px] font-mono text-slate-500 uppercase tracking-widest block mb-1.5">
-          Modo de análisis
-        </label>
-        <div className="flex rounded-lg border border-white/10 overflow-hidden text-[11px] font-mono">
-          <button
-            type="button"
-            onClick={() => onRouteModeChange("demo")}
-            disabled={isAnalyzingRoute}
-            className={`flex-1 py-1.5 transition-colors disabled:cursor-not-allowed ${
-              routeMode === "demo"
-                ? "bg-cyan-500/15 text-cyan-400"
-                : "text-slate-500 hover:text-slate-400"
-            }`}
-          >
-            Demo
-          </button>
-          <div className="w-px bg-white/10" />
-          <button
-            type="button"
-            onClick={() => onRouteModeChange("real")}
-            disabled={isAnalyzingRoute}
-            className={`flex-1 py-1.5 transition-colors disabled:cursor-not-allowed ${
-              routeMode === "real"
-                ? "bg-emerald-500/15 text-emerald-400"
-                : "text-slate-500 hover:text-slate-400"
-            }`}
-          >
-            Real
-          </button>
-        </div>
-      </div>
-
       <div>
         <label className="text-[10px] font-mono text-slate-500 uppercase tracking-widest block mb-1.5">
           Origen
@@ -119,9 +82,7 @@ export default function RouteInputs({
       )}
 
       <p className="text-[10px] font-mono text-slate-600 text-center leading-relaxed">
-        {routeMode === "demo"
-          ? "Modo demo · las direcciones modifican el resumen, pero la geometría aún es simulada."
-          : "Modo real · la geometría viene de OpenRouteService. El riesgo aún es experimental."}
+        Geometría real · OpenRouteService · Riesgo acumulado Euler
       </p>
     </div>
   );

@@ -2,7 +2,7 @@ import { IconShield } from "@/components/map/ui/map-icons";
 import type { RouteAnalysis, RouteRiskLevel } from "@/components/map/routes/route-types";
 import { formatDistanceKm } from "@/components/map/routes/route-utils";
 
-// Must match the initialRisk default in lib/risk/accumulated-risk.ts.
+// Reference value for delta display — mid-range neutral start.
 const INITIAL_RISK = 50;
 
 const RISK_BADGE_STYLES: Record<RouteRiskLevel, { dot: string; text: string; bg: string; label: string }> = {
@@ -141,25 +141,14 @@ export default function RouteSummary({ route }: { route: RouteAnalysis | null })
         </p>
       </div>
 
-      {route.mode === "demo" ? (
-        <div className="mt-3 p-3 rounded-xl bg-amber-500/5 border border-amber-500/15">
-          <p className="text-[10px] font-mono text-amber-400 uppercase tracking-widest mb-1">
-            Modo demostración
-          </p>
-          <p className="text-[11px] text-slate-400 leading-relaxed">
-            Ruta simulada para probar visualización sin consultar OpenRouteService.
-          </p>
-        </div>
-      ) : (
-        <div className="mt-3 p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/15">
-          <p className="text-[10px] font-mono text-cyan-400 uppercase tracking-widest mb-1">
-            Modo real
-          </p>
-          <p className="text-[11px] text-slate-400 leading-relaxed">
-            Geometría real por calles via OpenRouteService. Riesgo acumulado preliminar, sin Euler formal todavía.
-          </p>
-        </div>
-      )}
+      <div className="mt-3 p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/15">
+        <p className="text-[10px] font-mono text-cyan-400 uppercase tracking-widest mb-1">
+          OpenRouteService · Euler v1
+        </p>
+        <p className="text-[11px] text-slate-400 leading-relaxed">
+          Geometría real por calles. Riesgo acumulado calculado con modelo diferencial Euler.
+        </p>
+      </div>
     </div>
   );
 }

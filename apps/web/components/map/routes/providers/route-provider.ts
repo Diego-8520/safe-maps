@@ -4,7 +4,7 @@ import { demoRouteProvider } from "./demo-route-provider";
 import { apiRouteProvider } from "./api-route-provider";
 
 export async function analyzeRoute(input: AnalyzeRouteInput): Promise<RouteAnalysis> {
-  const mode = input.mode ?? "demo";
+  const mode = input.mode ?? "real";
 
   if (mode === "real") {
     return apiRouteProvider.analyze(input);

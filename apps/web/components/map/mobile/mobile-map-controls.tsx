@@ -10,8 +10,6 @@ interface MobileMapControlsProps {
   onAnalyzeRoute: () => void;
   routeError: string | null;
   isAnalyzingRoute: boolean;
-  routeMode: "demo" | "real";
-  onRouteModeChange: (mode: "demo" | "real") => void;
 }
 
 export default function MobileMapControls({
@@ -22,41 +20,10 @@ export default function MobileMapControls({
   onAnalyzeRoute,
   routeError,
   isAnalyzingRoute,
-  routeMode,
-  onRouteModeChange,
 }: MobileMapControlsProps) {
   return (
     <div className="absolute top-0 left-0 right-0 z-30 p-2.5">
       <div className="rounded-2xl bg-[#060d1a]/95 backdrop-blur-md border border-white/10 shadow-2xl p-3 space-y-2">
-        {/* Mode toggle */}
-        <div className="flex rounded-lg border border-white/10 overflow-hidden text-[11px] font-mono">
-          <button
-            type="button"
-            onClick={() => onRouteModeChange("demo")}
-            disabled={isAnalyzingRoute}
-            className={`flex-1 py-1 transition-colors disabled:cursor-not-allowed ${
-              routeMode === "demo"
-                ? "bg-cyan-500/15 text-cyan-400"
-                : "text-slate-500 hover:text-slate-400"
-            }`}
-          >
-            Demo
-          </button>
-          <div className="w-px bg-white/10" />
-          <button
-            type="button"
-            onClick={() => onRouteModeChange("real")}
-            disabled={isAnalyzingRoute}
-            className={`flex-1 py-1 transition-colors disabled:cursor-not-allowed ${
-              routeMode === "real"
-                ? "bg-emerald-500/15 text-emerald-400"
-                : "text-slate-500 hover:text-slate-400"
-            }`}
-          >
-            Real
-          </button>
-        </div>
-
         {/* Origin */}
         <div className="relative">
           <IconPin className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-cyan-400 pointer-events-none" />
