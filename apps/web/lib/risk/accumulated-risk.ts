@@ -9,7 +9,8 @@ import { scoreToRiskLevel } from "./risk-level";
 //
 // alpha scales with segment length so short segments produce smaller changes
 // than long ones, avoiding abrupt jumps at commune boundaries.
-// K controls overall convergence speed. Euler integration comes in a later phase.
+// K controls overall convergence speed. Retained for rollback/comparison only —
+// calculateEulerAccumulatedRouteRisk is the active model.
 const K = 0.35;
 
 export function calculatePreliminaryAccumulatedRisk(

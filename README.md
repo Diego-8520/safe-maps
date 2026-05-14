@@ -2,6 +2,21 @@ Safe Maps
 
 Safe Maps es una plataforma web de análisis de riesgo urbano basada en visualización geoespacial, análisis urbano y ecuaciones diferenciales.
 
+## Estado actual (mayo 2026)
+
+El pipeline de análisis de rutas está operativo de extremo a extremo:
+
+- Rutas reales via OpenRouteService (geometría real por calles)
+- Geocodificación con labels resueltos mostrados en la UI
+- Segmentación espacial por distancia (Haversine, ~400 m por segmento)
+- Asignación de comuna oficial por segmento (ray-casting)
+- Riesgo local por segmento (dataset `comunas-risk.json`)
+- Riesgo acumulado por modelo diferencial Euler (riskModelVersion: euler-v1)
+- Visualización: ruta coloreada, gráfica de curva Euler, panel explicativo, tabla de segmentos
+
+> Los datos de riesgo son simulados. La geometría de comunas es oficial (IDESC).
+> Ver documentación técnica: [docs/route-risk-pipeline.md](docs/route-risk-pipeline.md)
+
 El proyecto busca modelar cómo evoluciona el riesgo a lo largo de una ruta urbana utilizando variables como criminalidad, seguridad, vigilancia, iluminación y flujo de personas.
 
 La ciudad inicial del proyecto es:
@@ -215,10 +230,10 @@ Estado actual importante
 
 Actualmente el proyecto:
 
-NO usa rutas reales todavía,
-NO usa backend productivo todavía,
+SÍ usa rutas reales (OpenRouteService),
+NO usa backend productivo dedicado (Next.js API Routes),
 NO usa machine learning,
-NO usa datos criminales en tiempo real.
+NO usa datos criminales en tiempo real (risk dataset es simulado).
 
 El enfoque actual es consolidar correctamente:
 
