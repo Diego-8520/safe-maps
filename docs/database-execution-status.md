@@ -14,6 +14,7 @@ This document records the remote database execution status for the Safe Maps Sup
 | Required extensions active | Yes: `pgcrypto`, `postgis` |
 | Seeds 001-007 applied | Yes |
 | Seed 008 geometries applied | Yes |
+| Supabase TypeScript types generated | Yes |
 | Runtime pipeline changed | No |
 | App connected to Supabase | No |
 | RLS policies implemented | Pending |
@@ -91,11 +92,27 @@ No staging tables needed deletion.
 - No UI or route pipeline changes were made.
 - Supabase CLI local state is ignored via `supabase/.temp/`.
 
+## Generated TypeScript Types
+
+| Item | Value |
+|------|-------|
+| Generated | Yes |
+| Date | 2026-05-14 |
+| Schema | `public` |
+| Output file | `apps/web/lib/supabase/database.types.ts` |
+| Re-export module | `apps/web/lib/supabase/types.ts` |
+| Commit | `chore(supabase): generate database TypeScript types` |
+
+Generation command:
+
+```bash
+npx supabase gen types typescript --project-id hzvutucmigtflocalyrg --schema public > apps/web/lib/supabase/database.types.ts
+```
+
 ## Next Steps
 
 1. Define and activate concrete RLS policies.
-2. Generate TypeScript types from Supabase.
-3. Create Supabase repository implementations.
-4. Add a feature flag to switch reads from local data to DB data.
-5. Configure Vercel variables specifically for Safe Maps.
-6. Do not connect the app while variables may still point to another project.
+2. Create Supabase repository implementations.
+3. Add a feature flag to switch reads from local data to DB data.
+4. Configure Vercel variables specifically for Safe Maps.
+5. Do not connect the app while variables may still point to another project.
