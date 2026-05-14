@@ -3,8 +3,10 @@ import type { OrsDirectionsResponse } from "@/lib/openroute/openroute-types";
 import { segmentByDistance } from "@/lib/routes/route-segmentation";
 import { findCommuneForPoint } from "@/lib/geo/find-commune-for-point";
 import { findRiskByCommune } from "@/lib/risk/find-risk-by-commune";
-import { localCommuneRepository } from "@/lib/repositories/local-commune-repository";
-import { localCommuneRiskRepository } from "@/lib/repositories/local-commune-risk-repository";
+import {
+  getCommuneRepository,
+  getCommuneRiskRepository,
+} from "@/lib/repositories/repository-factory";
 import { calculateEulerAccumulatedRouteRisk } from "@/lib/risk/euler-accumulated-route-risk";
 
 function toRouteCoordinates(coords: [number, number][]): RouteCoordinate[] {
@@ -37,10 +39,12 @@ export async function normalizeOpenRouteResponse(
   const { distance, duration } = feature.properties.summary;
 
   const chunks = segmentByDistance(allCoords);
+  const communeRepository = getCommuneRepository();
+  const communeRiskRepository = getCommuneRiskRepository();
 
   const [features, riskData] = await Promise.all([
-    localCommuneRepository.getFeatures(),
-    localCommuneRiskRepository.getAll(),
+    communeRepository.getFeatures(),
+    communeRiskRepository.getAll(),
   ]);
 
   const rawSegments: RouteSegment[] = chunks.map((chunk, index) => {

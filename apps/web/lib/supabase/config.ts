@@ -1,22 +1,43 @@
-/**
- * Supabase environment variable references.
- *
- * NOT ACTIVE — Supabase is not yet integrated into the pipeline.
- * These references are placeholders for when @supabase/supabase-js is installed
- * and the database connection is configured.
- *
- * Key distinction:
- *   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY — anon/public key, safe for browser.
- *     Its access is scoped by Row Level Security (RLS) policies on each table.
- *     Use this in createBrowserClient().
- *
- *   SUPABASE_SECRET_KEY — service role key, bypasses RLS entirely.
- *     Server-side only. Never expose to the browser. Never use NEXT_PUBLIC_.
- *     Use this in createServerClient() for admin operations.
- */
+export type SafeMapsDataSource = "local" | "supabase";
 
-export const SUPABASE_CONFIG = {
-  url: process.env.NEXT_PUBLIC_SUPABASE_URL ?? "",
-  publishableKey: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY ?? "",
-  secretKey: process.env.SUPABASE_SECRET_KEY ?? "",
-} as const;
+export const SAFE_MAPS_DATA_SOURCE_ENV = "SAFE_MAPS_DATA_SOURCE";
+
+export function getSafeMapsDataSource(): SafeMapsDataSource {
+  return process.env[SAFE_MAPS_DATA_SOURCE_ENV] === "supabase"
+    ? "supabase"
+    : "local";
+}
+
+export function isSupabaseDataSourceEnabled(): boolean {
+  return getSafeMapsDataSource() === "supabase";
+}
+
+export interface SupabaseServerConfig {
+  url: string;
+  secretKey: string;
+}
+
+export interface SupabaseBrowserConfig {
+  url: string;
+  publishableKey: string;
+}
+
+export function getSupabaseServerConfig(): SupabaseServerConfig {
+  const url = process.env.SAFE_MAPS_SUPABASE_URL ?? "";
+  const secretKey = process.env.SAFE_MAPS_SUPABASE_SECRET_KEY ?? "";
+
+  if (!url || !secretKey) {
+    throw new Error(
+      "Supabase data source is enabled, but SAFE_MAPS_SUPABASE_URL or SAFE_MAPS_SUPABASE_SECRET_KEY is missing.",
+    );
+  }
+
+  return { url, secretKey };
+}
+
+export function getSupabaseBrowserConfig(): SupabaseBrowserConfig {
+  return {
+    url: process.env.SAFE_MAPS_SUPABASE_URL ?? "",
+    publishableKey: process.env.SAFE_MAPS_SUPABASE_PUBLISHABLE_KEY ?? "",
+  };
+}

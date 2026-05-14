@@ -15,6 +15,8 @@ This document records the remote database execution status for the Safe Maps Sup
 | Seeds 001-007 applied | Yes |
 | Seed 008 geometries applied | Yes |
 | Supabase TypeScript types generated | Yes |
+| Supabase repositories created | Yes |
+| Supabase repository activation | Feature flag: `SAFE_MAPS_DATA_SOURCE=supabase` |
 | Runtime pipeline changed | No |
 | App connected to Supabase | No |
 | RLS policies implemented | Pending |
@@ -91,6 +93,7 @@ No staging tables needed deletion.
 - The app is intentionally not connected to Supabase yet.
 - No UI or route pipeline changes were made.
 - Supabase CLI local state is ignored via `supabase/.temp/`.
+- Supabase repositories exist, but the repository factory defaults to local data.
 
 ## Generated TypeScript Types
 
@@ -112,7 +115,7 @@ npx supabase gen types typescript --project-id hzvutucmigtflocalyrg --schema pub
 ## Next Steps
 
 1. Define and activate concrete RLS policies.
-2. Create Supabase repository implementations.
-3. Add a feature flag to switch reads from local data to DB data.
+2. Verify Supabase repository reads in a controlled local environment with `SAFE_MAPS_DATA_SOURCE=supabase`.
+3. Add direct PostGIS spatial lookup when ready to replace ray-casting.
 4. Configure Vercel variables specifically for Safe Maps.
 5. Do not connect the app while variables may still point to another project.

@@ -35,8 +35,7 @@
  *
  * === Dependencies ===
  *
- * - @supabase/ssr installed and configured
- * - Supabase project connected (NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SECRET_KEY)
+ * - Supabase project connected with SAFE_MAPS_SUPABASE_URL and server-only key
  * - Migration: `CREATE TABLE communes (id INTEGER, geometry GEOMETRY(MULTIPOLYGON, 4326))`
  * - Migration: `CREATE INDEX communes_geometry_gist ON communes USING GIST (geometry)`
  * - Migration: `ALTER TABLE communes ENABLE ROW LEVEL SECURITY`
@@ -55,7 +54,6 @@
  * === Stub (not functional) ===
  */
 
-import type { GeoJsonPosition, CommuneFeature } from "../geojson-types";
 import type { SpatialCommuneLookupStrategy } from "./spatial-commune-lookup-strategy";
 
 /**
@@ -65,7 +63,7 @@ import type { SpatialCommuneLookupStrategy } from "./spatial-commune-lookup-stra
  * but will be removed when the interface becomes async.
  */
 class PostGISCommuneLookupStrategy implements SpatialCommuneLookupStrategy {
-  findCommuneId(_point: GeoJsonPosition, _features: CommuneFeature[]): number | null {
+  findCommuneId(): number | null {
     throw new Error(
       "PostGISCommuneLookupStrategy is not yet implemented. " +
         "Configure Supabase and write the ST_Within migration before activating this strategy.",
