@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
       ]);
 
       const orsResponse = await getDrivingRoute(originCoords, destinationCoords);
-      const route = normalizeOpenRouteResponse(orsResponse, origin.trim(), destination.trim());
+      const route = await normalizeOpenRouteResponse(orsResponse, origin.trim(), destination.trim());
 
       return NextResponse.json(route);
     } catch (err) {
