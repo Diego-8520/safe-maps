@@ -1,17 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import MapLibreView from "@/components/map/map-libre-view";
 import RiskLegend from "@/components/map/risk-legend";
 import MapSidebar from "@/components/map/sidebar/map-sidebar";
+import MobileMapControls from "@/components/map/mobile/mobile-map-controls";
+import MobileBottomSheet from "@/components/map/mobile/mobile-bottom-sheet";
 import type { EnrichedFeatureProperties } from "@/components/map/types";
 import type { RouteAnalysis } from "@/components/map/routes/route-types";
 import { analyzeRoute } from "@/components/map/routes/providers/route-provider";
 import { validateRouteInput } from "@/components/map/routes/services/route-validation";
 
+// Visible on desktop only — mobile uses MobileMapControls instead.
 function MapToolbar() {
   return (
-    <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between px-4 py-2.5 bg-[#060d1a]/80 backdrop-blur-sm border-b border-white/5">
+    <div className="hidden md:flex absolute top-0 left-0 right-0 z-10 items-center justify-between px-4 py-2.5 bg-[#060d1a]/80 backdrop-blur-sm border-b border-white/5">
       <div className="flex items-center gap-3 text-[11px] font-mono text-slate-500">
         <span className="text-cyan-400">●</span>
         <span>Cali · Valle del Cauca · Colombia</span>
@@ -35,16 +38,19 @@ function CoordWatermark() {
 function MapArea({
   onCommuneSelect,
   route,
+  children,
 }: {
   onCommuneSelect: (c: EnrichedFeatureProperties) => void;
   route: RouteAnalysis | null;
+  children?: ReactNode;
 }) {
   return (
-    <main className="flex-1 relative min-h-[55vh] md:min-h-0 overflow-hidden">
+    <main className="flex-1 relative min-h-0 overflow-hidden">
       <MapLibreView onCommuneSelect={onCommuneSelect} route={route} />
       <MapToolbar />
       <RiskLegend />
       <CoordWatermark />
+      {children}
     </main>
   );
 }
@@ -92,22 +98,37 @@ export default function MapLayout() {
     }
   }
 
+  const routeInputProps = {
+    origin,
+    destination,
+    onOriginChange: setOrigin,
+    onDestinationChange: setDestination,
+    onAnalyzeRoute: handleAnalyzeRoute,
+    routeError,
+    isAnalyzingRoute,
+    routeMode,
+    onRouteModeChange: setRouteMode,
+  };
+
   return (
     <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-hidden">
-      <MapSidebar
-        selected={selected}
-        route={route}
-        origin={origin}
-        destination={destination}
-        onOriginChange={setOrigin}
-        onDestinationChange={setDestination}
-        onAnalyzeRoute={handleAnalyzeRoute}
-        routeError={routeError}
-        isAnalyzingRoute={isAnalyzingRoute}
-        routeMode={routeMode}
-        onRouteModeChange={setRouteMode}
-      />
-      <MapArea onCommuneSelect={(c) => setSelected(c)} route={route} />
+      {/* Desktop sidebar — hidden on mobile */}
+      <div className="hidden md:flex md:flex-col md:w-80 md:shrink-0 md:h-full">
+        <MapSidebar
+          selected={selected}
+          route={route}
+          {...routeInputProps}
+        />
+      </div>
+
+      {/* Map — fills all space; on mobile it's the only flex child */}
+      <MapArea onCommuneSelect={(c) => setSelected(c)} route={route}>
+        {/* Mobile overlays — hidden on desktop */}
+        <div className="md:hidden">
+          <MobileMapControls {...routeInputProps} />
+          <MobileBottomSheet route={route} selected={selected} />
+        </div>
+      </MapArea>
     </div>
   );
 }
