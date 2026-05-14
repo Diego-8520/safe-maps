@@ -14,7 +14,7 @@ const RISK_FALLBACK: Omit<CommuneRiskData, "comuna"> = {
 export async function loadEnrichedGeojson(): Promise<GeoJSON.FeatureCollection> {
   const [geojsonRes, riskRes] = await Promise.all([
     fetch("/data/comunas-cali.geojson"),
-    fetch("/data/comunas-risk.json"),
+    fetch("/api/communes/risk"),
   ]);
 
   if (!geojsonRes.ok) throw new Error(`GeoJSON fetch failed: ${geojsonRes.status}`);
