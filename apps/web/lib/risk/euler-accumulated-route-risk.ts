@@ -1,12 +1,13 @@
 /**
- * Euler-based route risk accumulator — orchestration layer.
+ * Euler-based route risk accumulator — orchestration layer (riskModelVersion: euler-v1).
  *
+ * Primary accumulated-risk model for both demo and real routes.
  * Applies the Euler ODE integrator to a full RouteAnalysis, replacing
  * accumulatedRiskScore/accumulatedRiskLevel per segment and the final risk
  * totals, while preserving every other field immutably.
  *
- * NOT the primary output yet — used in parallel with calculatePreliminaryAccumulatedRisk
- * for comparison. Replace the preliminary model only after validating results.
+ * calculatePreliminaryAccumulatedRisk (accumulated-risk.ts) is retained for
+ * rollback or comparison purposes but is no longer called in the main pipeline.
  */
 
 import type { RouteAnalysis } from "@/components/map/routes/route-types";
@@ -22,7 +23,7 @@ const DEFAULT_INITIAL_RISK_SCORE = 50;
  *
  * Pure function: no I/O, no React, no MapLibre, no Next.js runtime deps.
  *
- * @param routeAnalysis   Existing route produced by the preliminary model.
+ * @param routeAnalysis   Route with segments and localRiskScore already assigned.
  * @param riskData        Full CommuneRisk dataset (e.g. from loadCommunesRisk()).
  * @param initialRiskScore Starting accumulated risk (default 50 — neutral mid-range).
  * @returns               New RouteAnalysis with Euler-derived accumulated risk values.

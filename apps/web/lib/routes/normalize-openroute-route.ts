@@ -5,7 +5,7 @@ import { loadCommunesGeoJSON } from "@/lib/geo/load-communes-geojson";
 import { findCommuneForPoint } from "@/lib/geo/find-commune-for-point";
 import { loadCommunesRisk } from "@/lib/risk/load-communes-risk";
 import { findRiskByCommune } from "@/lib/risk/find-risk-by-commune";
-import { calculatePreliminaryAccumulatedRisk } from "@/lib/risk/accumulated-risk";
+import { calculateEulerAccumulatedRouteRisk } from "@/lib/risk/euler-accumulated-route-risk";
 
 function toRouteCoordinates(coords: [number, number][]): RouteCoordinate[] {
   return coords.map(([lng, lat]) => ({ lng, lat }));
@@ -55,25 +55,24 @@ export async function normalizeOpenRouteResponse(
       communeId,
       localRiskScore,
       localRiskLevel,
-      // Filled in by calculatePreliminaryAccumulatedRisk below.
+      // Filled in by calculateEulerAccumulatedRouteRisk below.
       accumulatedRiskScore: 0,
       accumulatedRiskLevel: "medium" as const,
     };
   });
 
-  const segments = calculatePreliminaryAccumulatedRisk(rawSegments);
-
-  const lastSegment = segments[segments.length - 1];
-
-  return {
+  // riskModelVersion: euler-v1
+  const rawRoute: RouteAnalysis = {
     id: `real-route-${Date.now()}`,
     originLabel,
     destinationLabel,
     totalDistanceMeters: Math.round(distance),
     estimatedDurationMinutes: Math.round(duration / 60),
-    finalRiskScore: lastSegment.accumulatedRiskScore,
-    finalRiskLevel: lastSegment.accumulatedRiskLevel,
+    finalRiskScore: 50,
+    finalRiskLevel: "medium",
     mode: "real",
-    segments,
+    segments: rawSegments,
   };
+
+  return calculateEulerAccumulatedRouteRisk(rawRoute, riskData);
 }
