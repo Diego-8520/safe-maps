@@ -45,7 +45,8 @@ function MapArea({
   children?: ReactNode;
 }) {
   return (
-    <main className="flex-1 relative min-h-0 overflow-hidden">
+    <main className="flex-1 relative min-h-[100svh] md:min-h-0 overflow-hidden">
+      {" "}
       <MapLibreView onCommuneSelect={onCommuneSelect} route={route} />
       <MapToolbar />
       <RiskLegend />
@@ -56,7 +57,9 @@ function MapArea({
 }
 
 export default function MapLayout() {
-  const [selected, setSelected] = useState<EnrichedFeatureProperties | null>(null);
+  const [selected, setSelected] = useState<EnrichedFeatureProperties | null>(
+    null,
+  );
   const [route, setRoute] = useState<RouteAnalysis | null>(null);
   const [origin, setOrigin] = useState("Centro, Cali");
   const [destination, setDestination] = useState("Aguablanca, Cali");
@@ -88,7 +91,8 @@ export default function MapLayout() {
       if (routeMode === "real") {
         const message = err instanceof Error ? err.message : null;
         setRouteError(
-          message ?? "No se pudo calcular la ruta real. Verifica las direcciones e intenta nuevamente.",
+          message ??
+            "No se pudo calcular la ruta real. Verifica las direcciones e intenta nuevamente.",
         );
       } else {
         setRouteError("No se pudo analizar la ruta. Intenta nuevamente.");
@@ -111,16 +115,12 @@ export default function MapLayout() {
   };
 
   return (
-    <div className="flex flex-col md:flex-row flex-1 min-h-0 overflow-hidden">
+    <div className="flex flex-col md:flex-row flex-1 min-h-[100svh] md:min-h-0 overflow-hidden">
+      {" "}
       {/* Desktop sidebar — hidden on mobile */}
       <div className="hidden md:flex md:flex-col md:w-80 md:shrink-0 md:h-full">
-        <MapSidebar
-          selected={selected}
-          route={route}
-          {...routeInputProps}
-        />
+        <MapSidebar selected={selected} route={route} {...routeInputProps} />
       </div>
-
       {/* Map — fills all space; on mobile it's the only flex child */}
       <MapArea onCommuneSelect={(c) => setSelected(c)} route={route}>
         {/* Mobile overlays — hidden on desktop */}
