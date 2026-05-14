@@ -110,13 +110,13 @@
   {
     "zona_id": "comuna_10",
     "valid_from": "2024-01-01",
-    "criminalidad": 32.8,
-    "seguridad": 61,
-    "vigilancia": 58,
-    "iluminacion": 72,
-    "flujo_personas": 66,
-    "risk_score": 38.3,
-    "risk_level": "low",
+    "criminalidad": 44,
+    "seguridad": 58,
+    "vigilancia": 54,
+    "iluminacion": 57,
+    "flujo_personas": 52,
+    "risk_score": 47,
+    "risk_level": "medium",
     "data_quality": "simulated"
   },
   {

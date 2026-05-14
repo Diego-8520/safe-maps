@@ -83,8 +83,8 @@ VALUES
     (SELECT id FROM communes WHERE zona_id = 'comuna_10'),
     (SELECT id FROM risk_model_versions WHERE code = 'euler-v1'),
     '2024-01-01', NULL,
-    32.8, 61, 58, 72, 66,
-    38.3, 'low', 'simulated',
+    44, 58, 54, 57, 52,
+    47, 'medium', 'simulated',
     (SELECT id FROM data_sources WHERE name = 'Safe Maps — Dataset Académico v1')
   ),
   (
