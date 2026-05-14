@@ -77,7 +77,7 @@ Client                              Server
 - Handler: `GET`
 - Calls `getCommuneRiskRepository().getAll()`
 - Returns `NextResponse.json(data)` — type `CommuneRisk[]`, same shape as the local JSON file
-- No Cache-Control (dynamic, no persistent cache by default in Next.js App Router)
+- Exports `export const dynamic = "force-dynamic"` — explicit opt-out of static generation and edge caching (Vercel, CDN, Next.js build-time optimization). Prevents stale commune risk data during active model/data iteration regardless of deploy target or runtime.
 - No authentication (public data, consistent with other endpoints)
 - `loadEnrichedGeojson()` receives this response as `CommuneRiskData[]` (alias of `CommuneRisk`) — no deserialization change needed
 
