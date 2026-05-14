@@ -45,8 +45,7 @@ function MapArea({
   children?: ReactNode;
 }) {
   return (
-    <main className="flex-1 relative min-h-[100svh] md:min-h-0 overflow-hidden">
-      {" "}
+    <main className="flex-1 relative overflow-hidden">
       <MapLibreView onCommuneSelect={onCommuneSelect} route={route} />
       <MapToolbar />
       <RiskLegend />
@@ -115,8 +114,7 @@ export default function MapLayout() {
   };
 
   return (
-    <div className="flex flex-col md:flex-row flex-1 min-h-[100svh] md:min-h-0 overflow-hidden">
-      {" "}
+    <div className="flex flex-col md:flex-row h-full overflow-hidden">
       {/* Desktop sidebar — hidden on mobile */}
       <div className="hidden md:flex md:flex-col md:w-80 md:shrink-0 md:h-full">
         <MapSidebar selected={selected} route={route} {...routeInputProps} />
