@@ -45,7 +45,7 @@ NextResponse.json(route)
          │
          ▼
 Frontend renderiza:
-  ├── MapLibreView           (ruta coloreada por accumulatedRiskLevel)
+  ├── MapLibreView           (ruta coloreada por localRiskLevel)
   ├── RouteSummary           (finalRiskScore, labels de origen y destino)
   ├── RouteRiskChart         (curva Euler — SVG puro)
   ├── EulerModelPanel        (fórmula y tabla de variables)

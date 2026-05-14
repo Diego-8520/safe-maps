@@ -226,7 +226,7 @@ export default function MapLibreView({ onCommuneSelect, route }: MapLibreViewPro
             paint: {
               "line-color": [
                 "match",
-                ["get", "accumulatedRiskLevel"],
+                ["get", "localRiskLevel"],
                 "low",    "#22c55e",
                 "medium", "#f59e0b",
                 "high",   "#ef4444",
