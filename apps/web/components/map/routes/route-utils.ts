@@ -9,12 +9,6 @@ export function routeRiskColor(level: RouteRiskLevel): string {
   return colors[level];
 }
 
-export function getRiskLevelFromScore(score: number): RouteRiskLevel {
-  if (score < 45) return "low";
-  if (score < 70) return "medium";
-  return "high";
-}
-
 export function formatDistanceKm(meters: number): string {
   return `${(meters / 1000).toFixed(1)} km`;
 }
