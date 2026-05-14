@@ -41,30 +41,19 @@ Ejemplo: si `criminalidad = 70`, entonces `C̃ = 0.70`.
 
 ## Ecuación diferencial
 
-La derivada del riesgo respecto a la distancia:
+El riesgo acumulado evoluciona hacia el riesgo local del segmento actual:
 
 ```
-dR/dx = a·C̃ − b·S̃ − d·Ṽ − e·Ĩ + h·F̃
+dR/dx = k · (L - R)
 ```
 
-### Coeficientes actuales
-
-| Símbolo | Variable | Dirección | Coeficiente |
-|---------|----------|-----------|-------------|
-| a | Criminalidad | ↑ riesgo | 30 |
-| b | Seguridad | ↓ riesgo | 15 |
-| d | Vigilancia | ↓ riesgo | 10 |
-| e | Iluminación | ↓ riesgo | 10 |
-| h | Flujo personas | ↑ riesgo | 8 |
-
-> **Los coeficientes son provisionales y experimentales.** No han sido calibrados con datos reales. Son puntos de partida para el modelo académico.
+Donde `L` es `localRiskScore` del segmento y `k` controla qué tan rápido se ajusta el acumulado. En `euler-v1`, `k = 1`.
 
 ### Interpretación
 
-- La **criminalidad** tiene el mayor peso: un segmento muy peligroso eleva fuertemente el riesgo.
-- La **seguridad** y **vigilancia** actúan como amortiguadores.
-- La **iluminación** reduce el riesgo pero con menor peso relativo.
-- El **flujo de personas** aumenta el riesgo en el modelo actual, modelando la exposición a la actividad criminal. Este supuesto es discutible y puede revisarse.
+- Si `L > R`, el riesgo acumulado sube hacia el riesgo local.
+- Si `L < R`, el riesgo acumulado baja gradualmente hacia el riesgo local.
+- Si `L = R`, el acumulado se mantiene estable.
 
 ---
 
@@ -73,12 +62,13 @@ dR/dx = a·C̃ − b·S̃ − d·Ṽ − e·Ĩ + h·F̃
 El riesgo acumulado se calcula numéricamente segmento a segmento mediante el método de Euler:
 
 ```
-R(n+1) = clamp( R(n) + f(C, S, V, I, F) · Δx_km , 0, 100 )
+R(n+1) = clamp( R(n) + k · (localRiskScore - R(n)) · Δx_km , 0, 100 )
 ```
 
 Donde:
 - `R(n)` es el riesgo acumulado al inicio del segmento n
-- `f(C, S, V, I, F)` es la derivada calculada con las variables de ese segmento
+- `localRiskScore` es el riesgo local del segmento/comuna actual
+- `k` es la sensibilidad del ajuste hacia el riesgo local
 - `Δx_km` es la longitud del segmento en kilómetros
 - `clamp(·, 0, 100)` limita R al rango válido
 
@@ -87,10 +77,10 @@ Donde:
 ## Condición inicial
 
 ```
-R(0) = localRiskScore del primer segmento
+R(0) = initialRiskScore = riesgo base/promedio de la comuna del punto de origen
 ```
 
-Si no hay segmentos, `R(0) = 50` (valor neutro).
+Si el punto de origen no cae en una comuna conocida, se usa el fallback neutro `R(0) = 50`.
 
 ---
 
@@ -103,7 +93,7 @@ Si no hay segmentos, `R(0) = 50` (valor neutro).
 
 Un segmento de riesgo local alto en el tramo 5 no provoca un salto abrupto en el acumulado: el cambio depende de la longitud del segmento y del estado previo de R.
 
-En la visualización, el mapa colorea cada tramo con `localRiskLevel` para mostrar el riesgo inmediato de la comuna actual. La gráfica Euler conserva `accumulatedRiskLevel` y `accumulatedRiskScore` para representar la evolución acumulada de la ruta, y ancla su primer punto en `R(0) = localRiskScore` del primer segmento.
+En la visualización, el mapa colorea cada tramo con `localRiskLevel` para mostrar el riesgo inmediato de la comuna actual. La gráfica Euler conserva `accumulatedRiskLevel` y `accumulatedRiskScore` para representar la evolución acumulada de la ruta, y ancla su primer punto en `R(0) = initialRiskScore` del origen.
 
 ---
 
@@ -123,12 +113,12 @@ Fuente única: `apps/web/lib/risk/risk-level.ts` → `scoreToRiskLevel()`.
 
 Supongamos una ruta con 3 segmentos, cada uno de 0.4 km:
 
-| n | Segmento | C | S | V | I | F | f = dR/dx | Δx | R(n) | R(n+1) |
-|---|---------|---|---|---|---|---|-----------|-----|------|--------|
-| 0 | Inicio | — | — | — | — | — | — | — | 45 | 45 |
-| 1 | Seg 1 | 60 | 40 | 50 | 60 | 30 | 18−6−5−6+2.4 = 3.4 | 0.4 | 45 | 46.4 |
-| 2 | Seg 2 | 80 | 20 | 30 | 30 | 60 | 24−3−3−3+4.8 = 19.8 | 0.4 | 46.4 | 54.3 |
-| 3 | Seg 3 | 30 | 70 | 70 | 80 | 20 | 9−10.5−7−8+1.6 = -14.9 | 0.4 | 54.3 | 48.4 |
+| n | Segmento | localRiskScore | Δx | R(n) | R(n+1) |
+|---|---------|----------------|----|------|--------|
+| 0 | Inicio | - | - | 47.0 | 47.0 |
+| 1 | Seg 1 | 38.3 | 0.4 | 47.0 | 43.5 |
+| 2 | Seg 2 | 38.3 | 0.4 | 43.5 | 41.4 |
+| 3 | Seg 3 | 60.0 | 0.4 | 41.4 | 48.8 |
 
 El riesgo sube al entrar en un tramo peligroso y baja al entrar en una zona más segura, pero de forma gradual.
 

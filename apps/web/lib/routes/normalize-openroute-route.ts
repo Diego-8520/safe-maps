@@ -86,5 +86,5 @@ export async function normalizeOpenRouteResponse(
     segments: rawSegments,
   };
 
-  return calculateEulerAccumulatedRouteRisk(rawRoute, riskData, initialRiskScore);
+  return calculateEulerAccumulatedRouteRisk(rawRoute, initialRiskScore);
 }

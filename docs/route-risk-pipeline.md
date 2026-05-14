@@ -74,6 +74,8 @@ interface RouteAnalysis {
   destinationLabel: string;          // Label resuelto por ORS
   totalDistanceMeters: number;       // Metros totales (entero)
   estimatedDurationMinutes: number;  // Minutos estimados (entero)
+  initialRiskScore: number;          // R(0), riesgo de la comuna del punto de origen
+  initialRiskLevel: RouteRiskLevel;  // Nivel de R(0)
   finalRiskScore: number;            // R de Euler al último segmento (0–100)
   finalRiskLevel: RouteRiskLevel;    // "low" | "medium" | "high"
   mode: "real";
@@ -153,7 +155,7 @@ El `label` resuelto se almacena en `RouteAnalysis.originLabel` y `destinationLab
 - Retorna `communeId` (número) o `null` si el punto cae fuera de todas las comunas.
 
 **Fallback para `communeId = null`:**  
-Se usan variables neutras `C=S=V=I=F=50`, produciendo `f ≈ +1.5` (deriva positiva conservadora, no cero).
+Se usa `localRiskScore = 50` como valor neutro. En el modelo Euler activo, el acumulado evoluciona gradualmente hacia ese valor durante el tramo.
 
 ---
 
@@ -165,25 +167,25 @@ Se usan variables neutras `C=S=V=I=F=50`, produciendo `f ≈ +1.5` (deriva posit
 euler-accumulated-route-risk.ts   ← orquestación principal
 build-euler-risk-input.ts         ← RouteSegment[] → EulerSegmentInput[]
 euler-risk-integrator.ts          ← bucle de Euler paso a paso
-risk-derivative.ts                ← función pura f(C, S, V, I, F)
+risk-derivative.ts                ← modelo lineal histórico, no usado por Euler activo
 risk-level.ts                     ← scoreToRiskLevel (fuente única de umbrales)
 ```
 
 ### Fórmula
 
 ```
-R(n+1) = clamp( R(n) + f(C, S, V, I, F) · Δx_km , 0, 100 )
+R(n+1) = clamp( R(n) + k · (localRiskScore - R(n)) · Δx_km , 0, 100 )
 ```
 
 ```
-f(C, S, V, I, F) = 30·C̃ − 15·S̃ − 10·Ṽ − 10·Ĩ + 8·F̃
+k = 1
 ```
 
-Donde `X̃ = X / 100` (normalización a [0, 1]).
+El acumulado se mueve hacia el riesgo local del segmento actual. Así, un tramo de riesgo medio o alto no puede empujar el acumulado en sentido contrario por pesos internos de variables urbanas.
 
 ### Condición inicial
 
-`R(0) = localRiskScore` del primer segmento. Fallback: `R(0) = 50`.
+`R(0) = initialRiskScore`, calculado con el riesgo base/promedio de la comuna donde cae el primer punto real de la ruta (`geometry.coordinates[0]`). Esto evita depender del punto medio del primer segmento, que puede caer en otra comuna. Fallback: primer `localRiskScore` disponible, o `50` si no hay segmentos.
 
 ---
 
@@ -248,7 +250,7 @@ La clave `OPENROUTE_API_KEY` nunca sale del servidor.
 
 | Archivo | Responsabilidad |
 |---------|----------------|
-| `lib/risk/risk-derivative.ts` | Función pura `f(C,S,V,I,F)` |
+| `lib/risk/risk-derivative.ts` | Modelo lineal histórico, conservado para comparación |
 | `lib/risk/euler-risk-integrator.ts` | Bucle de Euler |
 | `lib/risk/build-euler-risk-input.ts` | `RouteSegment[]` → `EulerSegmentInput[]` |
 | `lib/risk/euler-accumulated-route-risk.ts` | Orquestación Euler, retorna `RouteAnalysis` |
