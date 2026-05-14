@@ -63,7 +63,7 @@ function EmptyState() {
       </div>
       <p className="text-[11px] text-slate-600 leading-relaxed">
         Presiona <span className="text-slate-500 font-mono">Analizar ruta</span> para visualizar
-        una ruta demo con riesgo acumulado.
+        una ruta con riesgo acumulado.
       </p>
     </div>
   );
@@ -147,7 +147,7 @@ export default function RouteSummary({ route }: { route: RouteAnalysis | null })
             Modo demostración
           </p>
           <p className="text-[11px] text-slate-400 leading-relaxed">
-            Ruta simulada para probar visualización. La geometría real será calculada por OpenRouteService en una fase posterior.
+            Ruta simulada para probar visualización sin consultar OpenRouteService.
           </p>
         </div>
       ) : (
