@@ -1,0 +1,10 @@
+[
+  {
+    "name": "Safe Maps — Dataset Académico v1",
+    "source_type": "simulated",
+    "url": null,
+    "description": "Dataset inicial generado con valores académicos/estimados para prototipo.",
+    "reliability_level": "simulada",
+    "collected_at": "2024-01-01"
+  }
+]

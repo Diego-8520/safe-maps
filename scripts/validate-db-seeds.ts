@@ -42,14 +42,9 @@ function pass(msg: string): void {
   console.log(`  ✓ PASS  ${msg}`);
 }
 
-function readProcessed<T>(filename: string): T[] {
+function readProcessed<T>(filename: string): T[] | null {
   const filePath = path.join(PROCESSED_DIR, filename);
-  if (!fs.existsSync(filePath)) {
-    throw new Error(
-      `Processed file not found: ${filePath}\n` +
-      `Run scripts/prepare-db-seeds.ts first.`
-    );
-  }
+  if (!fs.existsSync(filePath)) return null;
   return JSON.parse(fs.readFileSync(filePath, "utf-8")) as T[];
 }
 
@@ -105,6 +100,14 @@ interface ModelCoefficient {
   variable_name: string;
   coefficient: number;
   effect_direction: string;
+}
+
+interface CommuneGeometry {
+  comuna_numero: number;
+  nombre: string;
+  geometry_type: string;
+  geometry_source: string;
+  geometry: { type: string; coordinates: unknown };
 }
 
 // ---------------------------------------------------------------------------
@@ -277,6 +280,43 @@ function validateTimeWindows(windows: TimeWindow[]): void {
   }
 }
 
+function validateCommuneGeometries(geometries: CommuneGeometry[]): void {
+  console.log("\n▶ commune_geometries.json");
+
+  if (geometries.length === 22) {
+    pass(`22 geometry records present`);
+  } else {
+    fail(`Expected 22 geometry records, got ${geometries.length}`);
+  }
+
+  const nums = geometries.map((g) => g.comuna_numero).sort((a, b) => a - b);
+  const expected = Array.from({ length: 22 }, (_, i) => i + 1);
+  const missing = expected.filter((n) => !nums.includes(n));
+  const dupes   = nums.filter((n, i) => nums.indexOf(n) !== i);
+
+  if (missing.length === 0 && dupes.length === 0) {
+    pass(`comuna_numero 1–22 present, no gaps, no duplicates`);
+  } else {
+    if (missing.length > 0) fail(`Missing comuna_numero: ${missing.join(", ")}`);
+    if (dupes.length > 0)   fail(`Duplicate comuna_numero: ${dupes.join(", ")}`);
+  }
+
+  const validTypes = new Set(["Polygon", "MultiPolygon"]);
+  const badTypes = geometries.filter((g) => !validTypes.has(g.geometry_type));
+  if (badTypes.length === 0) {
+    pass(`All geometry_type values valid (Polygon | MultiPolygon)`);
+  } else {
+    fail(`Invalid geometry_type: ${badTypes.map((g) => `${g.comuna_numero}=${g.geometry_type}`).join(", ")}`);
+  }
+
+  const missingGeometry = geometries.filter((g) => !g.geometry || !g.geometry.coordinates);
+  if (missingGeometry.length === 0) {
+    pass(`All records have geometry with coordinates`);
+  } else {
+    fail(`Missing geometry.coordinates for: ${missingGeometry.map((g) => g.comuna_numero).join(", ")}`);
+  }
+}
+
 function validateModelCoefficients(coefficients: ModelCoefficient[]): void {
   console.log("\n▶ risk_model_coefficients.json");
 
@@ -316,20 +356,40 @@ function validateModelCoefficients(coefficients: ModelCoefficient[]): void {
 // Main
 // ---------------------------------------------------------------------------
 
+function skipSection(filename: string, command: string): void {
+  console.log(`\n▶ ${filename}`);
+  warn(`${filename} not found — run '${command}' to generate it`);
+}
+
 async function main(): Promise<void> {
   console.log("Safe Maps — Seed Validation\n");
 
+  // Excel-based seeds — skip with warning if prepare-seeds hasn't been run yet
   const communes    = readProcessed<Commune>("communes.json");
   const profiles    = readProcessed<RiskProfile>("commune_risk_profiles.json");
   const indicators  = readProcessed<AnnualIndicator>("annual_crime_indicators.json");
   const windows     = readProcessed<TimeWindow>("risk_time_windows.json");
   const coefficients = readProcessed<ModelCoefficient>("risk_model_coefficients.json");
 
-  validateCommunes(communes);
-  validateRiskProfiles(profiles, communes);
-  validateAnnualIndicators(indicators, communes);
-  validateTimeWindows(windows);
-  validateModelCoefficients(coefficients);
+  const excelMissing = [communes, profiles, indicators, windows, coefficients].some((d) => d === null);
+  if (excelMissing) {
+    skipSection("communes.json + Excel seeds", "npm run prepare-seeds");
+  } else {
+    validateCommunes(communes!);
+    validateRiskProfiles(profiles!, communes!);
+    validateAnnualIndicators(indicators!, communes!);
+    validateTimeWindows(windows!);
+    validateModelCoefficients(coefficients!);
+  }
+
+  // Geometry seed — generated separately from GeoJSON, no Excel needed
+  const geomPath = path.join(PROCESSED_DIR, "commune_geometries.json");
+  if (fs.existsSync(geomPath)) {
+    const geometries = JSON.parse(fs.readFileSync(geomPath, "utf-8")) as CommuneGeometry[];
+    validateCommuneGeometries(geometries);
+  } else {
+    skipSection("commune_geometries.json", "npm run prepare-geometry-seed");
+  }
 
   console.log("\n" + "─".repeat(50));
   if (errors === 0 && warnings === 0) {

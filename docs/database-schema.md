@@ -363,12 +363,19 @@ Respetar el orden de dependencias de foreign keys:
 ```
 1. data_sources              (sin FKs entrantes de otras tablas activas)
 2. risk_model_versions       (sin FKs entrantes)
-3. communes                  (sin FKs entrantes de tablas activas)
+3. communes                  (sin FKs entrantes; geometry=NULL en este paso)
 4. risk_model_coefficients   (→ risk_model_versions)
 5. commune_risk_profiles     (→ communes, risk_model_versions, data_sources)
 6. annual_crime_indicators   (→ communes, data_sources)
 7. risk_time_windows         (→ data_sources)
+8. commune_geometries        (UPDATE communes SET geometry=...; requiere PostGIS activo)
 ```
+
+**Seeds 1–7** generados por `npm run prepare-seeds` (requiere Excel en `data/raw/`).
+**Seed 8** generado por `npm run prepare-geometry-seed` (lee `apps/web/public/data/comunas-cali.geojson`; no requiere Excel).
+
+El seed 8 usa funciones PostGIS: `ST_Multi()`, `ST_SetSRID()`, `ST_GeomFromGeoJSON()`.
+No aplicar sin que la migración esté activa (`CREATE EXTENSION IF NOT EXISTS postgis`).
 
 ---
 

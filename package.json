@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "prepare-seeds": "tsx scripts/prepare-db-seeds.ts",
+    "prepare-geometry-seed": "tsx scripts/prepare-commune-geometry-seed.ts",
+    "prepare-all-seeds": "npm run prepare-seeds && npm run prepare-geometry-seed && npm run validate-seeds",
     "validate-seeds": "tsx scripts/validate-db-seeds.ts"
   },
   "devDependencies": {

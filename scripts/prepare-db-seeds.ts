@@ -165,10 +165,13 @@ function scoreToRiskLevel(score: number): "low" | "medium" | "high" {
 
 function mapRiskLevelSpanish(raw: unknown): "BAJO" | "MEDIO" | "ALTO" {
   const s = String(raw ?? "").toUpperCase().trim();
-  if (s === "BAJO"  || s === "LOW"  || s === "1") return "BAJO";
-  if (s === "MEDIO" || s === "MEDIUM" || s === "MED" || s === "2") return "MEDIO";
-  if (s === "ALTO"  || s === "HIGH" || s === "3") return "ALTO";
-  throw new Error(`Unrecognized risk_level value: "${raw}". Expected BAJO, MEDIO, or ALTO.`);
+  if (s === "BAJO"   || s === "LOW"    || s === "1") return "BAJO";
+  if (s === "MEDIO"  || s === "MEDIUM" || s === "MED" || s === "2") return "MEDIO";
+  if (s === "ALTO"   || s === "HIGH"   || s === "3") return "ALTO";
+  // DB schema only allows BAJO/MEDIO/ALTO. CRITICO is the source's 4th level —
+  // map to ALTO since the DB CHECK constraint does not include CRITICO.
+  if (s === "CRITICO" || s === "CRITICAL" || s === "4") return "ALTO";
+  throw new Error(`Unrecognized risk_level value: "${raw}". Expected BAJO, MEDIO, ALTO, or CRITICO.`);
 }
 
 function escapeSQL(val: string | null | undefined): string {
@@ -193,25 +196,26 @@ function toSQLNumber(n: number | null | undefined): string {
 function processDimZonas(sheet: import("xlsx").WorkSheet): ProcessedCommune[] {
   const rows = sheetToRows(sheet);
   const result: ProcessedCommune[] = rows
-    .map((row) => {
+    .map((row, i) => {
       const zona_id = String(row["zona_id"] ?? "").trim();
-      const nombre  = String(row["nombre"] ?? row["name"] ?? "").trim();
+      // Excel column is "zona_nombre"; fall back to "nombre" / "name" for flexibility
+      const nombre  = String(row["zona_nombre"] ?? row["nombre"] ?? row["name"] ?? "").trim();
 
-      if (!zona_id) throw new Error(`dim_zonas: row missing zona_id: ${JSON.stringify(row)}`);
+      if (!zona_id) throw new Error(`dim_zonas row ${i + 1}: missing zona_id`);
 
-      // Extract number from zona_id (ZO001 → 1) or from a dedicated column
+      // Extract number from dedicated column or parse from zona_id (e.g. "comuna_01" → 1)
       const numero_raw = row["comuna_numero"] ?? row["numero"] ?? row["id_comuna"];
       let comuna_numero: number;
       if (numero_raw !== null && numero_raw !== undefined) {
         comuna_numero = parseInt(String(numero_raw), 10);
       } else {
         const match = zona_id.match(/\d+/);
-        if (!match) throw new Error(`Cannot derive comuna_numero from zona_id "${zona_id}"`);
+        if (!match) throw new Error(`dim_zonas row ${i + 1}: cannot derive comuna_numero from zona_id "${zona_id}"`);
         comuna_numero = parseInt(match[0], 10);
       }
 
       if (isNaN(comuna_numero) || comuna_numero < 1 || comuna_numero > 22) {
-        throw new Error(`Invalid comuna_numero ${comuna_numero} for zona_id "${zona_id}"`);
+        throw new Error(`dim_zonas row ${i + 1}: invalid comuna_numero ${comuna_numero} for zona_id "${zona_id}"`);
       }
 
       const name = nombre || `Comuna ${comuna_numero}`;
@@ -253,43 +257,70 @@ function processVariablesModelo(sheet: import("xlsx").WorkSheet): ProcessedRiskP
   });
 }
 
-function processFactHomicidios(sheet: import("xlsx").WorkSheet): ProcessedAnnualIndicator[] {
+function processFactHomicidios(
+  sheet: import("xlsx").WorkSheet,
+  knownZonaIds: Set<string>
+): ProcessedAnnualIndicator[] {
   const rows = sheetToRows(sheet);
-  const result: ProcessedAnnualIndicator[] = rows.map((row) => {
+  const skipped: string[] = [];
+
+  const result: ProcessedAnnualIndicator[] = rows.flatMap((row, i) => {
+    const rowNum  = i + 1;
     const zona_id = String(row["zona_id"] ?? "").trim();
-    const year    = parseInt(String(row["year"] ?? row["anio"] ?? ""), 10);
-    const value   = parseInt(String(row["value"] ?? row["homicidios"] ?? row["cantidad"] ?? ""), 10);
 
-    if (!zona_id) throw new Error(`fact_homicidios_anual: missing zona_id: ${JSON.stringify(row)}`);
-    if (isNaN(year)) throw new Error(`fact_homicidios_anual: invalid year: ${JSON.stringify(row)}`);
-    if (isNaN(value) || value < 0) throw new Error(`fact_homicidios_anual: invalid value: ${JSON.stringify(row)}`);
+    if (!zona_id) throw new Error(`fact_homicidios_anual row ${rowNum}: missing "zona_id"`);
 
-    return {
-      zona_id,
-      year,
-      indicator: "homicidio",
-      value,
-      granularity: "conteo_anual_comuna",
-    };
+    // Skip aggregate rows (e.g. "rural", "zona_exp") that are not communes
+    if (!knownZonaIds.has(zona_id)) {
+      skipped.push(`row ${rowNum}: zona_id="${zona_id}" skipped (not a commune)`);
+      return [];
+    }
+
+    // Excel uses "anio"; accept "year" as fallback
+    const year    = parseInt(String(row["anio"] ?? row["year"] ?? ""), 10);
+    // Excel uses "valor"; accept legacy aliases as fallbacks
+    const value   = parseInt(String(row["valor"] ?? row["value"] ?? row["homicidios"] ?? row["cantidad"] ?? ""), 10);
+    // Excel has actual columns for indicator and granularity — prefer them over hardcoded values
+    const indicator   = String(row["indicador"]    ?? row["indicator"]   ?? "homicidio").trim();
+    const granularity = String(row["granularidad"] ?? row["granularity"] ?? "conteo_anual_comuna").trim();
+
+    if (isNaN(year))    throw new Error(`fact_homicidios_anual row ${rowNum}: expected numeric "anio"/"year", got ${JSON.stringify(row["anio"] ?? row["year"])}`);
+    if (isNaN(value))   throw new Error(`fact_homicidios_anual row ${rowNum}: expected numeric "valor"/"value", got ${JSON.stringify(row["valor"] ?? row["value"])}`);
+    if (value < 0)      throw new Error(`fact_homicidios_anual row ${rowNum}: "valor" must be >= 0, got ${value}`);
+    if (!indicator)     throw new Error(`fact_homicidios_anual row ${rowNum}: missing "indicador"/"indicator"`);
+    if (!granularity)   throw new Error(`fact_homicidios_anual row ${rowNum}: missing "granularidad"/"granularity"`);
+
+    return [{ zona_id, year, indicator, value, granularity }];
   }).sort((a, b) => a.zona_id.localeCompare(b.zona_id) || a.year - b.year);
+
+  if (skipped.length > 0) {
+    console.log(`  ⚠ fact_homicidios_anual: skipped ${skipped.length} non-commune row(s):`);
+    skipped.forEach((msg) => console.log(`    • ${msg}`));
+  }
 
   return result;
 }
 
 function processDimHorarios(sheet: import("xlsx").WorkSheet): ProcessedTimeWindow[] {
   const rows = sheetToRows(sheet);
-  return rows.map((row) => {
+  return rows.map((row, i) => {
+    const rowNum     = i + 1;
     const horario_id = String(row["horario_id"] ?? "").trim();
-    const label      = String(row["label"] ?? row["descripcion"] ?? row["horario"] ?? "").trim();
-    const start_time = String(row["start_time"] ?? row["hora_inicio"] ?? "").trim();
-    const end_time   = String(row["end_time"]   ?? row["hora_fin"]    ?? "").trim();
+    // Excel uses "rango_horario"; accept legacy aliases as fallbacks
+    const label      = String(row["rango_horario"] ?? row["label"] ?? row["descripcion"] ?? row["horario"] ?? "").trim();
+    // Excel uses "hora_inicio" / "hora_fin"
+    const start_time = String(row["hora_inicio"] ?? row["start_time"] ?? "").trim();
+    const end_time   = String(row["hora_fin"]    ?? row["end_time"]   ?? "").trim();
 
-    if (!horario_id) throw new Error(`dim_horarios_riesgo: missing horario_id: ${JSON.stringify(row)}`);
-    if (!start_time || !end_time) {
-      throw new Error(`dim_horarios_riesgo: missing start_time/end_time for "${horario_id}"`);
+    if (!horario_id) throw new Error(`dim_horarios_riesgo row ${rowNum}: missing "horario_id"`);
+    if (!start_time) throw new Error(`dim_horarios_riesgo row ${rowNum} ("${horario_id}"): missing "hora_inicio"/"start_time"`);
+    if (!end_time)   throw new Error(`dim_horarios_riesgo row ${rowNum} ("${horario_id}"): missing "hora_fin"/"end_time"`);
+
+    // Excel uses "nivel_riesgo_horario"; accept legacy aliases
+    const nivel_raw  = row["nivel_riesgo_horario"] ?? row["nivel_riesgo"] ?? row["risk_level"] ?? row["riesgo"];
+    if (nivel_raw === null || nivel_raw === undefined) {
+      throw new Error(`dim_horarios_riesgo row ${rowNum} ("${horario_id}"): missing "nivel_riesgo_horario"`);
     }
-
-    const nivel_raw = row["nivel_riesgo"] ?? row["risk_level"] ?? row["riesgo"];
     const risk_level = mapRiskLevelSpanish(nivel_raw);
 
     return {
@@ -299,9 +330,12 @@ function processDimHorarios(sheet: import("xlsx").WorkSheet): ProcessedTimeWindo
       end_time,
       homicidios_2024:    toNullableInt(row["homicidios_2024"]),
       homicidios_2025:    toNullableInt(row["homicidios_2025"]),
-      variation_absolute: toNullableInt(row["variation_absolute"] ?? row["variacion_absoluta"]),
-      variation_pct:      toNullableFloat(row["variation_pct"] ?? row["variacion_pct"], 4),
-      risk_score:         toNullableFloat(row["risk_score"] ?? row["indice_riesgo"], 2),
+      // Excel uses "variacion_absoluta"
+      variation_absolute: toNullableInt(row["variacion_absoluta"] ?? row["variation_absolute"]),
+      // Excel uses "variacion_pct"
+      variation_pct:      toNullableFloat(row["variacion_pct"] ?? row["variation_pct"], 4),
+      // Excel uses "riesgo_horario_score_0_10"
+      risk_score:         toNullableFloat(row["riesgo_horario_score_0_10"] ?? row["risk_score"] ?? row["indice_riesgo"], 2),
       risk_level,
     };
   });
@@ -515,7 +549,8 @@ async function main(): Promise<void> {
   console.log("Processing sheets...");
   const communes   = processDimZonas(dimZonasSheet);
   const profiles   = processVariablesModelo(variablesSheet);
-  const indicators = processFactHomicidios(homicidiosSheet);
+  const knownZonaIds = new Set(communes.map((c) => c.zona_id));
+  const indicators = processFactHomicidios(homicidiosSheet, knownZonaIds);
   const windows    = processDimHorarios(horariosSheet);
   const sources    = processDataSources(dataSourcesSheet);
   const versions   = buildModelVersions();

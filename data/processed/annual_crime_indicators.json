@@ -1,0 +1,310 @@
+[
+  {
+    "zona_id": "comuna_01",
+    "year": 2024,
+    "indicator": "homicidio",
+    "value": 20,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_01",
+    "year": 2025,
+    "indicator": "homicidio",
+    "value": 11,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_02",
+    "year": 2024,
+    "indicator": "homicidio",
+    "value": 22,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_02",
+    "year": 2025,
+    "indicator": "homicidio",
+    "value": 32,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_03",
+    "year": 2024,
+    "indicator": "homicidio",
+    "value": 34,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_03",
+    "year": 2025,
+    "indicator": "homicidio",
+    "value": 33,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_04",
+    "year": 2024,
+    "indicator": "homicidio",
+    "value": 17,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_04",
+    "year": 2025,
+    "indicator": "homicidio",
+    "value": 26,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_05",
+    "year": 2024,
+    "indicator": "homicidio",
+    "value": 14,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_05",
+    "year": 2025,
+    "indicator": "homicidio",
+    "value": 11,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_06",
+    "year": 2024,
+    "indicator": "homicidio",
+    "value": 34,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_06",
+    "year": 2025,
+    "indicator": "homicidio",
+    "value": 45,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_07",
+    "year": 2024,
+    "indicator": "homicidio",
+    "value": 26,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_07",
+    "year": 2025,
+    "indicator": "homicidio",
+    "value": 36,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_08",
+    "year": 2024,
+    "indicator": "homicidio",
+    "value": 21,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_08",
+    "year": 2025,
+    "indicator": "homicidio",
+    "value": 61,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_09",
+    "year": 2024,
+    "indicator": "homicidio",
+    "value": 44,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_09",
+    "year": 2025,
+    "indicator": "homicidio",
+    "value": 47,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_10",
+    "year": 2024,
+    "indicator": "homicidio",
+    "value": 25,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_10",
+    "year": 2025,
+    "indicator": "homicidio",
+    "value": 33,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_11",
+    "year": 2024,
+    "indicator": "homicidio",
+    "value": 33,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_11",
+    "year": 2025,
+    "indicator": "homicidio",
+    "value": 47,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_12",
+    "year": 2024,
+    "indicator": "homicidio",
+    "value": 28,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_12",
+    "year": 2025,
+    "indicator": "homicidio",
+    "value": 38,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_13",
+    "year": 2024,
+    "indicator": "homicidio",
+    "value": 76,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_13",
+    "year": 2025,
+    "indicator": "homicidio",
+    "value": 80,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_14",
+    "year": 2024,
+    "indicator": "homicidio",
+    "value": 84,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_14",
+    "year": 2025,
+    "indicator": "homicidio",
+    "value": 96,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_15",
+    "year": 2024,
+    "indicator": "homicidio",
+    "value": 118,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_15",
+    "year": 2025,
+    "indicator": "homicidio",
+    "value": 115,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_16",
+    "year": 2024,
+    "indicator": "homicidio",
+    "value": 28,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_16",
+    "year": 2025,
+    "indicator": "homicidio",
+    "value": 48,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_17",
+    "year": 2024,
+    "indicator": "homicidio",
+    "value": 47,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_17",
+    "year": 2025,
+    "indicator": "homicidio",
+    "value": 21,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_18",
+    "year": 2024,
+    "indicator": "homicidio",
+    "value": 71,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_18",
+    "year": 2025,
+    "indicator": "homicidio",
+    "value": 90,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_19",
+    "year": 2024,
+    "indicator": "homicidio",
+    "value": 25,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_19",
+    "year": 2025,
+    "indicator": "homicidio",
+    "value": 24,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_20",
+    "year": 2024,
+    "indicator": "homicidio",
+    "value": 45,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_20",
+    "year": 2025,
+    "indicator": "homicidio",
+    "value": 49,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_21",
+    "year": 2024,
+    "indicator": "homicidio",
+    "value": 88,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_21",
+    "year": 2025,
+    "indicator": "homicidio",
+    "value": 77,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_22",
+    "year": 2024,
+    "indicator": "homicidio",
+    "value": 3,
+    "granularity": "conteo_anual_comuna"
+  },
+  {
+    "zona_id": "comuna_22",
+    "year": 2025,
+    "indicator": "homicidio",
+    "value": 6,
+    "granularity": "conteo_anual_comuna"
+  }
+]

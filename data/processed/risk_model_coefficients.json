@@ -1,0 +1,37 @@
+[
+  {
+    "model_code": "euler-v1",
+    "variable_code": "C",
+    "variable_name": "criminalidad",
+    "coefficient": 30,
+    "effect_direction": "increase"
+  },
+  {
+    "model_code": "euler-v1",
+    "variable_code": "S",
+    "variable_name": "seguridad",
+    "coefficient": 15,
+    "effect_direction": "decrease"
+  },
+  {
+    "model_code": "euler-v1",
+    "variable_code": "V",
+    "variable_name": "vigilancia",
+    "coefficient": 10,
+    "effect_direction": "decrease"
+  },
+  {
+    "model_code": "euler-v1",
+    "variable_code": "I",
+    "variable_name": "iluminacion",
+    "coefficient": 10,
+    "effect_direction": "decrease"
+  },
+  {
+    "model_code": "euler-v1",
+    "variable_code": "F",
+    "variable_name": "flujo_personas",
+    "coefficient": 8,
+    "effect_direction": "increase"
+  }
+]

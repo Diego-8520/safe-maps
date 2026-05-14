@@ -1,0 +1,98 @@
+[
+  {
+    "horario_id": "h01",
+    "label": "00:00–02:59",
+    "start_time": "00:00",
+    "end_time": "02:59",
+    "homicidios_2024": 133,
+    "homicidios_2025": 187,
+    "variation_absolute": 54,
+    "variation_pct": 0.406,
+    "risk_score": 7.31,
+    "risk_level": "ALTO"
+  },
+  {
+    "horario_id": "h02",
+    "label": "03:00–05:59",
+    "start_time": "03:00",
+    "end_time": "05:59",
+    "homicidios_2024": 87,
+    "homicidios_2025": 82,
+    "variation_absolute": -5,
+    "variation_pct": -0.0575,
+    "risk_score": 0.58,
+    "risk_level": "BAJO"
+  },
+  {
+    "horario_id": "h03",
+    "label": "06:00–08:59",
+    "start_time": "06:00",
+    "end_time": "08:59",
+    "homicidios_2024": 57,
+    "homicidios_2025": 74,
+    "variation_absolute": 17,
+    "variation_pct": 0.2982,
+    "risk_score": 0.06,
+    "risk_level": "BAJO"
+  },
+  {
+    "horario_id": "h04",
+    "label": "09:00–11:59",
+    "start_time": "09:00",
+    "end_time": "11:59",
+    "homicidios_2024": 53,
+    "homicidios_2025": 73,
+    "variation_absolute": 20,
+    "variation_pct": 0.3774,
+    "risk_score": 0,
+    "risk_level": "BAJO"
+  },
+  {
+    "horario_id": "h05",
+    "label": "12:00–14:59",
+    "start_time": "12:00",
+    "end_time": "14:59",
+    "homicidios_2024": 119,
+    "homicidios_2025": 102,
+    "variation_absolute": -17,
+    "variation_pct": -0.1429,
+    "risk_score": 1.86,
+    "risk_level": "BAJO"
+  },
+  {
+    "horario_id": "h06",
+    "label": "15:00–17:59",
+    "start_time": "15:00",
+    "end_time": "17:59",
+    "homicidios_2024": 113,
+    "homicidios_2025": 118,
+    "variation_absolute": 5,
+    "variation_pct": 0.0442,
+    "risk_score": 2.88,
+    "risk_level": "MEDIO"
+  },
+  {
+    "horario_id": "h07",
+    "label": "18:00–20:59",
+    "start_time": "18:00",
+    "end_time": "20:59",
+    "homicidios_2024": 181,
+    "homicidios_2025": 193,
+    "variation_absolute": 12,
+    "variation_pct": 0.0663,
+    "risk_score": 7.69,
+    "risk_level": "ALTO"
+  },
+  {
+    "horario_id": "h08",
+    "label": "21:00–23:59",
+    "start_time": "21:00",
+    "end_time": "23:59",
+    "homicidios_2024": 195,
+    "homicidios_2025": 229,
+    "variation_absolute": 34,
+    "variation_pct": 0.1744,
+    "risk_score": 10,
+    "risk_level": "ALTO"
+  }
+]

@@ -1,0 +1,112 @@
+[
+  {
+    "zona_id": "comuna_01",
+    "comuna_numero": 1,
+    "name": "Comuna 1"
+  },
+  {
+    "zona_id": "comuna_02",
+    "comuna_numero": 2,
+    "name": "Comuna 2"
+  },
+  {
+    "zona_id": "comuna_03",
+    "comuna_numero": 3,
+    "name": "Comuna 3"
+  },
+  {
+    "zona_id": "comuna_04",
+    "comuna_numero": 4,
+    "name": "Comuna 4"
+  },
+  {
+    "zona_id": "comuna_05",
+    "comuna_numero": 5,
+    "name": "Comuna 5"
+  },
+  {
+    "zona_id": "comuna_06",
+    "comuna_numero": 6,
+    "name": "Comuna 6"
+  },
+  {
+    "zona_id": "comuna_07",
+    "comuna_numero": 7,
+    "name": "Comuna 7"
+  },
+  {
+    "zona_id": "comuna_08",
+    "comuna_numero": 8,
+    "name": "Comuna 8"
+  },
+  {
+    "zona_id": "comuna_09",
+    "comuna_numero": 9,
+    "name": "Comuna 9"
+  },
+  {
+    "zona_id": "comuna_10",
+    "comuna_numero": 10,
+    "name": "Comuna 10"
+  },
+  {
+    "zona_id": "comuna_11",
+    "comuna_numero": 11,
+    "name": "Comuna 11"
+  },
+  {
+    "zona_id": "comuna_12",
+    "comuna_numero": 12,
+    "name": "Comuna 12"
+  },
+  {
+    "zona_id": "comuna_13",
+    "comuna_numero": 13,
+    "name": "Comuna 13"
+  },
+  {
+    "zona_id": "comuna_14",
+    "comuna_numero": 14,
+    "name": "Comuna 14"
+  },
+  {
+    "zona_id": "comuna_15",
+    "comuna_numero": 15,
+    "name": "Comuna 15"
+  },
+  {
+    "zona_id": "comuna_16",
+    "comuna_numero": 16,
+    "name": "Comuna 16"
+  },
+  {
+    "zona_id": "comuna_17",
+    "comuna_numero": 17,
+    "name": "Comuna 17"
+  },
+  {
+    "zona_id": "comuna_18",
+    "comuna_numero": 18,
+    "name": "Comuna 18"
+  },
+  {
+    "zona_id": "comuna_19",
+    "comuna_numero": 19,
+    "name": "Comuna 19"
+  },
+  {
+    "zona_id": "comuna_20",
+    "comuna_numero": 20,
+    "name": "Comuna 20"
+  },
+  {
+    "zona_id": "comuna_21",
+    "comuna_numero": 21,
+    "name": "Comuna 21"
+  },
+  {
+    "zona_id": "comuna_22",
+    "comuna_numero": 22,
+    "name": "Comuna 22"
+  }
+]

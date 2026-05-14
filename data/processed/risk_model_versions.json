@@ -1,0 +1,9 @@
+[
+  {
+    "code": "euler-v1",
+    "name": "Euler v1 — Modelo diferencial lineal",
+    "description": "Integración numérica por método de Euler. dR/dx = a·C̃ − b·S̃ − d·Ṽ − e·Ĩ + h·F̃.",
+    "formula": "R(n+1) = clamp(R(n) + f(C,S,V,I,F) * Δx_km, 0, 100)",
+    "is_active": true
+  }
+]
