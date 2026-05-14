@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import { analyzeDemoRoute } from "@/components/map/routes/services/analyze-demo-route";
 import { geocodeAddress, getDrivingRoute } from "@/lib/openroute/openroute-client";
 import { normalizeOpenRouteResponse } from "@/lib/routes/normalize-openroute-route";
 import {
@@ -8,13 +7,10 @@ import {
   OrsRoutingError,
   OrsNetworkError,
 } from "@/lib/openroute/openroute-errors";
-import { loadCommunesRisk } from "@/lib/risk/load-communes-risk";
-import { calculateEulerAccumulatedRouteRisk } from "@/lib/risk/euler-accumulated-route-risk";
 
 interface AnalyzeRouteRequest {
   origin: string;
   destination: string;
-  mode?: "demo" | "real";
 }
 
 interface AnalyzeRouteErrorResponse {
@@ -32,7 +28,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const { origin, destination, mode } = body;
+  const { origin, destination } = body;
 
   if (typeof origin !== "string" || !origin.trim()) {
     return NextResponse.json<AnalyzeRouteErrorResponse>(
@@ -55,57 +51,44 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  if (mode === "real") {
-    try {
-      const [originCoords, destinationCoords] = await Promise.all([
-        geocodeAddress(origin.trim()),
-        geocodeAddress(destination.trim()),
-      ]);
+  try {
+    const [originCoords, destinationCoords] = await Promise.all([
+      geocodeAddress(origin.trim()),
+      geocodeAddress(destination.trim()),
+    ]);
 
-      const orsResponse = await getDrivingRoute(originCoords, destinationCoords);
-      const route = await normalizeOpenRouteResponse(orsResponse, origin.trim(), destination.trim());
+    const orsResponse = await getDrivingRoute(originCoords, destinationCoords);
+    const route = await normalizeOpenRouteResponse(orsResponse, origin.trim(), destination.trim());
 
-      return NextResponse.json(route);
-    } catch (err) {
-      if (err instanceof OrsApiKeyMissingError) {
-        return NextResponse.json<AnalyzeRouteErrorResponse>(
-          { error: err.message },
-          { status: 500 },
-        );
-      }
-      if (err instanceof OrsGeocodingError) {
-        return NextResponse.json<AnalyzeRouteErrorResponse>(
-          { error: err.message },
-          { status: 422 },
-        );
-      }
-      if (err instanceof OrsRoutingError) {
-        return NextResponse.json<AnalyzeRouteErrorResponse>(
-          { error: err.message },
-          { status: 422 },
-        );
-      }
-      if (err instanceof OrsNetworkError) {
-        return NextResponse.json<AnalyzeRouteErrorResponse>(
-          { error: err.message },
-          { status: 503 },
-        );
-      }
+    return NextResponse.json(route);
+  } catch (err) {
+    if (err instanceof OrsApiKeyMissingError) {
       return NextResponse.json<AnalyzeRouteErrorResponse>(
-        { error: "Error al analizar la ruta." },
+        { error: err.message },
         { status: 500 },
       );
     }
+    if (err instanceof OrsGeocodingError) {
+      return NextResponse.json<AnalyzeRouteErrorResponse>(
+        { error: err.message },
+        { status: 422 },
+      );
+    }
+    if (err instanceof OrsRoutingError) {
+      return NextResponse.json<AnalyzeRouteErrorResponse>(
+        { error: err.message },
+        { status: 422 },
+      );
+    }
+    if (err instanceof OrsNetworkError) {
+      return NextResponse.json<AnalyzeRouteErrorResponse>(
+        { error: err.message },
+        { status: 503 },
+      );
+    }
+    return NextResponse.json<AnalyzeRouteErrorResponse>(
+      { error: "Error al analizar la ruta." },
+      { status: 500 },
+    );
   }
-
-  // mode === "demo" or undefined — riskModelVersion: euler-v1
-  const demoRoute = analyzeDemoRoute({
-    origin: origin.trim(),
-    destination: destination.trim(),
-  });
-
-  const riskData = await loadCommunesRisk();
-  const route = calculateEulerAccumulatedRouteRisk(demoRoute, riskData);
-
-  return NextResponse.json(route);
 }

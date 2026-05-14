@@ -107,7 +107,7 @@ export default function MapLibreView({ onCommuneSelect, route }: MapLibreViewPro
           }
 
           // --- Layer 3: selected-commune-outline (always on top) ---
-          // demo-route-line is inserted before this layer when route is set.
+          // route-line is inserted before this layer when route is set.
           if (!map.getLayer("selected-commune-outline")) {
             map.addLayer({
               id: "selected-commune-outline",
@@ -152,14 +152,14 @@ export default function MapLibreView({ onCommuneSelect, route }: MapLibreViewPro
           });
 
           // --- Route segment hover events ---
-          // Registered once here; dormant until demo-route-line layer exists.
+          // Registered once here; dormant until route-line layer exists.
           // Suppresses the commune popup while hovering the route.
-          map.on("mouseenter", "demo-route-line", () => {
+          map.on("mouseenter", "route-line", () => {
             map.getCanvas().style.cursor = "pointer";
             communePopup.remove();
           });
 
-          map.on("mousemove", "demo-route-line", (e) => {
+          map.on("mousemove", "route-line", (e) => {
             if (!e.features?.length) return;
             const p = e.features[0].properties as RouteSegmentPopupProps;
             routePopupRef.current
@@ -168,7 +168,7 @@ export default function MapLibreView({ onCommuneSelect, route }: MapLibreViewPro
               .addTo(map);
           });
 
-          map.on("mouseleave", "demo-route-line", () => {
+          map.on("mouseleave", "route-line", () => {
             map.getCanvas().style.cursor = "";
             routePopupRef.current?.remove();
           });
@@ -195,20 +195,20 @@ export default function MapLibreView({ onCommuneSelect, route }: MapLibreViewPro
       if (!map) return;
 
       if (!route) {
-        if (map.getLayer("demo-route-line")) map.removeLayer("demo-route-line");
-        if (map.getSource("demo-route")) map.removeSource("demo-route");
+        if (map.getLayer("route-line")) map.removeLayer("route-line");
+        if (map.getSource("route")) map.removeSource("route");
         return;
       }
 
       const geojson = buildRouteGeoJson(route);
 
-      if (map.getSource("demo-route")) {
-        (map.getSource("demo-route") as maplibregl.GeoJSONSource).setData(geojson);
+      if (map.getSource("route")) {
+        (map.getSource("route") as maplibregl.GeoJSONSource).setData(geojson);
       } else {
-        map.addSource("demo-route", { type: "geojson", data: geojson });
+        map.addSource("route", { type: "geojson", data: geojson });
       }
 
-      if (!map.getLayer("demo-route-line")) {
+      if (!map.getLayer("route-line")) {
         // Insert before selected-commune-outline so highlight stays on top
         const beforeId = map.getLayer("selected-commune-outline")
           ? "selected-commune-outline"
@@ -216,9 +216,9 @@ export default function MapLibreView({ onCommuneSelect, route }: MapLibreViewPro
 
         map.addLayer(
           {
-            id: "demo-route-line",
+            id: "route-line",
             type: "line",
-            source: "demo-route",
+            source: "route",
             layout: {
               "line-cap": "round",
               "line-join": "round",

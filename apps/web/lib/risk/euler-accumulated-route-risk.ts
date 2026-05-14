@@ -1,7 +1,7 @@
 /**
  * Euler-based route risk accumulator — orchestration layer (riskModelVersion: euler-v1).
  *
- * Primary accumulated-risk model for both demo and real routes.
+ * Primary accumulated-risk model for real routes via OpenRouteService.
  * Applies the Euler ODE integrator to a full RouteAnalysis, replacing
  * accumulatedRiskScore/accumulatedRiskLevel per segment and the final risk
  * totals, while preserving every other field immutably.

@@ -44,11 +44,7 @@ export interface RouteAnalysis {
   finalRiskScore: number;
   finalRiskLevel: RouteRiskLevel;
 
-  /**
-   * Modo actual de visualización.
-   * "demo": geometría simulada. "real": geometría desde OpenRouteService.
-   */
-  mode: "demo" | "real";
+  mode: "real";
 
   segments: RouteSegment[];
 }

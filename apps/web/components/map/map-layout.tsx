@@ -81,7 +81,6 @@ export default function MapLayout() {
       const analyzedRoute = await analyzeRoute({
         origin: origin.trim(),
         destination: destination.trim(),
-        mode: "real",
       });
       setRoute(analyzedRoute);
     } catch (err) {
