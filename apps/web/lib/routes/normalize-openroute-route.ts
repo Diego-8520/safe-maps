@@ -5,12 +5,7 @@ import { loadCommunesGeoJSON } from "@/lib/geo/load-communes-geojson";
 import { findCommuneForPoint } from "@/lib/geo/find-commune-for-point";
 import { loadCommunesRisk } from "@/lib/risk/load-communes-risk";
 import { findRiskByCommune } from "@/lib/risk/find-risk-by-commune";
-
-// Accumulated risk and final score remain placeholder until the accumulation model is implemented.
-const PLACEHOLDER_ACCUMULATED_SCORE = 50;
-const PLACEHOLDER_ACCUMULATED_LEVEL = "medium" as const;
-const PLACEHOLDER_FINAL_SCORE = 50;
-const PLACEHOLDER_FINAL_LEVEL = "medium" as const;
+import { calculatePreliminaryAccumulatedRisk } from "@/lib/risk/accumulated-risk";
 
 function toRouteCoordinates(coords: [number, number][]): RouteCoordinate[] {
   return coords.map(([lng, lat]) => ({ lng, lat }));
@@ -48,7 +43,7 @@ export async function normalizeOpenRouteResponse(
     loadCommunesRisk(),
   ]);
 
-  const segments: RouteSegment[] = chunks.map((chunk, index) => {
+  const rawSegments: RouteSegment[] = chunks.map((chunk, index) => {
     const midpoint = midpointOf(chunk.coords);
     const communeId = findCommuneForPoint(midpoint, communesGeoJSON.features);
     const { localRiskScore, localRiskLevel } = findRiskByCommune(communeId, riskData);
@@ -60,10 +55,15 @@ export async function normalizeOpenRouteResponse(
       communeId,
       localRiskScore,
       localRiskLevel,
-      accumulatedRiskScore: PLACEHOLDER_ACCUMULATED_SCORE,
-      accumulatedRiskLevel: PLACEHOLDER_ACCUMULATED_LEVEL,
+      // Filled in by calculatePreliminaryAccumulatedRisk below.
+      accumulatedRiskScore: 0,
+      accumulatedRiskLevel: "medium" as const,
     };
   });
+
+  const segments = calculatePreliminaryAccumulatedRisk(rawSegments);
+
+  const lastSegment = segments[segments.length - 1];
 
   return {
     id: `real-route-${Date.now()}`,
@@ -71,8 +71,8 @@ export async function normalizeOpenRouteResponse(
     destinationLabel,
     totalDistanceMeters: Math.round(distance),
     estimatedDurationMinutes: Math.round(duration / 60),
-    finalRiskScore: PLACEHOLDER_FINAL_SCORE,
-    finalRiskLevel: PLACEHOLDER_FINAL_LEVEL,
+    finalRiskScore: lastSegment.accumulatedRiskScore,
+    finalRiskLevel: lastSegment.accumulatedRiskLevel,
     mode: "real",
     segments,
   };
