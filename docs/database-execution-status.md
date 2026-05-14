@@ -116,6 +116,75 @@ Validation:
 | `select count(*) from public.communes_geojson` | 22 |
 | `jsonb_typeof(geometry_geojson)` | `object` for all 22 rows |
 
+## Supabase Runtime Test
+
+**Tested:** 2026-05-14  
+**Test type:** Local environment with `SAFE_MAPS_DATA_SOURCE=supabase`
+
+### Repository Reads
+
+Isolated TypeScript smoke test verified repository functionality without running the full app:
+
+| Repository | Method | Result | Details |
+|------------|--------|--------|---------|
+| `CommuneRepository` | `getFeatures()` | Pass | 22 comunas, all with geometry type Polygon or MultiPolygon |
+| `CommuneRiskRepository` | `getAll()` | Pass | 22 perfiles, valid riskLevel and 0–100 numeric ranges |
+
+No parsing errors or missing required fields.
+
+### Endpoint Test
+
+Local Next.js app tested the complete pipeline via `POST /api/routes/analyze`:
+
+**Request:**
+```json
+{
+  "origin": "Universidad del Valle, Cali",
+  "destination": "Chipichape, Cali"
+}
+```
+
+**Response (Supabase):**
+
+| Field | Value |
+|-------|-------|
+| HTTP status | 200 |
+| originLabel | `Calle 13, Santiago de Cali, VC, Colombia` |
+| destinationLabel | `DENTISALUD CHIPICHAPE, Santiago de Cali, VC, Colombia` |
+| totalDistanceMeters | 5495 |
+| estimatedDurationMinutes | 11 |
+| segments | 13 |
+| finalRiskScore | 0 |
+| finalRiskLevel | low |
+| communeIds | 2, 3 |
+| accumulatedRiskScore | Present in all segments |
+
+**Response (Local):**
+
+| Field | Value |
+|-------|-------|
+| HTTP status | 200 |
+| originLabel | `Calle 13, Santiago de Cali, VC, Colombia` |
+| destinationLabel | `DENTISALUD CHIPICHAPE, Santiago de Cali, VC, Colombia` |
+| totalDistanceMeters | 5495 |
+| estimatedDurationMinutes | 11 |
+| segments | 13 |
+| finalRiskScore | 0 |
+| finalRiskLevel | low |
+| communeIds | 2, 3 |
+
+**Comparison:** Identical operational results. No relevant differences between Supabase and local data source for this test route.
+
+### Validation
+
+| Check | Result |
+|-------|--------|
+| Geometry parsing | No errors |
+| Supabase query execution | No errors |
+| Risk score calculation (Euler) | No errors |
+| `.env.local` committed | No |
+| Default data source | Still local |
+
 ## Generated TypeScript Types
 
 | Item | Value |
