@@ -6,6 +6,8 @@ import type { EnrichedFeatureProperties } from "./types";
 import type { RouteAnalysis } from "./routes/route-types";
 import { loadEnrichedGeojson, normalizeCommuneProperties } from "./data/load-communes";
 import { buildCommunePopupHtml } from "./popups/commune-popup";
+import { buildRouteSegmentPopupHtml } from "./popups/route-segment-popup";
+import type { RouteSegmentPopupProps } from "./popups/route-segment-popup";
 import { buildRouteGeoJson } from "./routes/route-utils";
 
 interface MapLibreViewProps {
@@ -17,6 +19,7 @@ export default function MapLibreView({ onCommuneSelect, route }: MapLibreViewPro
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
   const onSelectRef = useRef(onCommuneSelect);
+  const routePopupRef = useRef<maplibregl.Popup | null>(null);
 
   useEffect(() => {
     onSelectRef.current = onCommuneSelect;
@@ -46,10 +49,16 @@ export default function MapLibreView({ onCommuneSelect, route }: MapLibreViewPro
 
     map.addControl(new maplibregl.NavigationControl(), "bottom-right");
 
-    const popup = new maplibregl.Popup({
+    const communePopup = new maplibregl.Popup({
       closeButton: false,
       closeOnClick: false,
       maxWidth: "300px",
+    });
+
+    routePopupRef.current = new maplibregl.Popup({
+      closeButton: false,
+      closeOnClick: false,
+      maxWidth: "260px",
     });
 
     map.on("load", () => {
@@ -113,7 +122,7 @@ export default function MapLibreView({ onCommuneSelect, route }: MapLibreViewPro
             });
           }
 
-          // --- Events ---
+          // --- Commune hover events ---
           map.on("mouseenter", "comunas-fill", () => {
             map.getCanvas().style.cursor = "pointer";
           });
@@ -122,12 +131,12 @@ export default function MapLibreView({ onCommuneSelect, route }: MapLibreViewPro
             if (!e.features?.length) return;
             const raw = e.features[0].properties as Partial<EnrichedFeatureProperties>;
             if (!raw?.nombre) return;
-            popup.setLngLat(e.lngLat).setHTML(buildCommunePopupHtml(normalizeCommuneProperties(raw))).addTo(map);
+            communePopup.setLngLat(e.lngLat).setHTML(buildCommunePopupHtml(normalizeCommuneProperties(raw))).addTo(map);
           });
 
           map.on("mouseleave", "comunas-fill", () => {
             map.getCanvas().style.cursor = "";
-            popup.remove();
+            communePopup.remove();
           });
 
           map.on("click", "comunas-fill", (e) => {
@@ -140,6 +149,28 @@ export default function MapLibreView({ onCommuneSelect, route }: MapLibreViewPro
               props.comuna,
             ]);
             onSelectRef.current?.(props);
+          });
+
+          // --- Route segment hover events ---
+          // Registered once here; dormant until demo-route-line layer exists.
+          // Suppresses the commune popup while hovering the route.
+          map.on("mouseenter", "demo-route-line", () => {
+            map.getCanvas().style.cursor = "pointer";
+            communePopup.remove();
+          });
+
+          map.on("mousemove", "demo-route-line", (e) => {
+            if (!e.features?.length) return;
+            const p = e.features[0].properties as RouteSegmentPopupProps;
+            routePopupRef.current
+              ?.setLngLat(e.lngLat)
+              .setHTML(buildRouteSegmentPopupHtml(p))
+              .addTo(map);
+          });
+
+          map.on("mouseleave", "demo-route-line", () => {
+            map.getCanvas().style.cursor = "";
+            routePopupRef.current?.remove();
           });
         })
         .catch((err) => {
