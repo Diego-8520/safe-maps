@@ -16,6 +16,7 @@ This document records the remote database execution status for the Safe Maps Sup
 | Seed 008 geometries applied | Yes |
 | Supabase TypeScript types generated | Yes |
 | Supabase repositories created | Yes |
+| `communes_geojson` view created | Yes |
 | Supabase repository activation | Feature flag: `SAFE_MAPS_DATA_SOURCE=supabase` |
 | Runtime pipeline changed | No |
 | App connected to Supabase | No |
@@ -43,6 +44,8 @@ This document records the remote database execution status for the Safe Maps Sup
 | Valid geometries | 22 |
 | Invalid geometries | 0 |
 | Null geometries | 0 |
+| `communes_geojson` rows | 22 |
+| `geometry_geojson` JSONB type | 22 `object` values |
 
 Seed 008 was completed by updating only communes whose geometry was null or invalid:
 
@@ -94,6 +97,24 @@ No staging tables needed deletion.
 - No UI or route pipeline changes were made.
 - Supabase CLI local state is ignored via `supabase/.temp/`.
 - Supabase repositories exist, but the repository factory defaults to local data.
+- `SupabaseCommuneRepository` reads `public.communes_geojson.geometry_geojson`, produced with `ST_AsGeoJSON`, instead of reading raw PostGIS `geometry`.
+
+## GeoJSON View
+
+`public.communes_geojson` was added by `supabase/migrations/20260514193000_communes_geojson_view.sql`.
+
+The view exposes `communes.geometry` through a stable GeoJSON contract for repository reads:
+
+```sql
+st_asgeojson(geometry)::jsonb as geometry_geojson
+```
+
+Validation:
+
+| Check | Result |
+|-------|--------|
+| `select count(*) from public.communes_geojson` | 22 |
+| `jsonb_typeof(geometry_geojson)` | `object` for all 22 rows |
 
 ## Generated TypeScript Types
 

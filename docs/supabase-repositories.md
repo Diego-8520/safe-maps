@@ -55,10 +55,18 @@ The factory keeps local repositories as the default:
 
 | Repository | Reads |
 |------------|-------|
-| `SupabaseCommuneRepository` | `communes` |
+| `SupabaseCommuneRepository` | `communes_geojson` |
 | `SupabaseCommuneRiskRepository` | `commune_risk_profiles` joined to `communes` via FK |
 
-The commune repository maps database rows to the current GeoJSON `Feature` shape so the existing route pipeline can keep using the synchronous ray-casting lookup. It attempts to parse the `geometry` value returned by PostgREST as GeoJSON. If PostgREST returns a non-GeoJSON geometry representation in an environment, add a read-only view or RPC that exposes `ST_AsGeoJSON(geometry)` before enabling the Supabase data source.
+The commune repository maps database rows to the current GeoJSON `Feature` shape so the existing route pipeline can keep using the synchronous ray-casting lookup.
+
+`SupabaseCommuneRepository` intentionally reads from `public.communes_geojson`, not directly from `public.communes.geometry`. PostGIS `geometry` serialization is not a stable app contract through PostgREST, so the versioned database view exposes:
+
+```sql
+st_asgeojson(geometry)::jsonb as geometry_geojson
+```
+
+The repository consumes `geometry_geojson` as the stable GeoJSON boundary.
 
 ## Boundaries
 
@@ -73,3 +81,4 @@ The commune repository maps database rows to the current GeoJSON `Feature` shape
 - `SAFE_MAPS_SUPABASE_SECRET_KEY` bypasses RLS. Keep it server-only.
 - The Supabase data source should not be enabled in shared environments until variables are verified for the Safe Maps project.
 - Direct PostGIS spatial lookup is still future work; the current Supabase commune repository preserves the existing GeoJSON-based lookup contract.
+- The `communes_geojson` view is read-only app infrastructure. Keep it in sync with any future geometry column changes.

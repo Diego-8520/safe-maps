@@ -7,10 +7,11 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/types";
 import type { CommuneRepository } from "./commune-repository";
 
-type CommuneRow = Database["public"]["Tables"]["communes"]["Row"];
+type CommuneGeoJsonRow =
+  Database["public"]["Views"]["communes_geojson"]["Row"];
 type SupabaseCommuneRow = Pick<
-  CommuneRow,
-  "comuna_numero" | "zona_id" | "name" | "geometry"
+  CommuneGeoJsonRow,
+  "comuna_numero" | "zona_id" | "name" | "geometry_geojson"
 >;
 
 function isPosition(value: unknown): value is [number, number] {
@@ -53,28 +54,45 @@ function isCommuneGeometry(value: unknown): value is CommuneGeometry {
 }
 
 function parseGeometry(row: SupabaseCommuneRow): CommuneGeometry {
-  const raw = row.geometry;
+  const raw = row.geometry_geojson;
   const candidate = typeof raw === "string" ? JSON.parse(raw) : raw;
 
   if (!isCommuneGeometry(candidate)) {
     throw new Error(
-      `Supabase commune ${row.comuna_numero} returned geometry in an unsupported format. Add a PostGIS ST_AsGeoJSON view/RPC before enabling the Supabase data source.`,
+      `Supabase communes_geojson row ${row.comuna_numero ?? "unknown"} returned geometry_geojson in an unsupported format.`,
     );
   }
 
   return candidate;
 }
 
+function requireField<T>(
+  value: T | null,
+  field: string,
+  row: SupabaseCommuneRow,
+): T {
+  if (value === null) {
+    throw new Error(
+      `Supabase communes_geojson row is missing required field ${field} for comuna ${row.comuna_numero ?? "unknown"}.`,
+    );
+  }
+
+  return value;
+}
+
 function toFeature(row: SupabaseCommuneRow): CommuneFeature {
+  const comunaNumero = requireField(row.comuna_numero, "comuna_numero", row);
+  const zonaId = requireField(row.zona_id, "zona_id", row);
+  const name = requireField(row.name, "name", row);
   const properties: CommuneProperties = {
-    comuna: row.comuna_numero,
-    COMUNA: row.comuna_numero,
-    id: row.zona_id,
-    ID: row.zona_id,
-    codigo: row.zona_id,
-    CODIGO: row.zona_id,
-    nombre: row.name,
-    NOMBRE: row.name,
+    comuna: comunaNumero,
+    COMUNA: comunaNumero,
+    id: zonaId,
+    ID: zonaId,
+    codigo: zonaId,
+    CODIGO: zonaId,
+    nombre: name,
+    NOMBRE: name,
   };
 
   return {
@@ -87,9 +105,9 @@ function toFeature(row: SupabaseCommuneRow): CommuneFeature {
 export class SupabaseCommuneRepository implements CommuneRepository {
   async getFeatures(): Promise<CommuneFeature[]> {
     const rows = await createSupabaseServerClient().get<SupabaseCommuneRow>(
-      "communes",
+      "communes_geojson",
       {
-        select: "comuna_numero,zona_id,name,geometry",
+        select: "comuna_numero,zona_id,name,geometry_geojson",
         order: "comuna_numero.asc",
       },
     );

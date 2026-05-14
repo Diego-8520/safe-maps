@@ -54,6 +54,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "annual_crime_indicators_commune_id_fkey"
+            columns: ["commune_id"]
+            isOneToOne: false
+            referencedRelation: "communes_geojson"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "annual_crime_indicators_source_id_fkey"
             columns: ["source_id"]
             isOneToOne: false
@@ -123,6 +130,13 @@ export type Database = {
             columns: ["commune_id"]
             isOneToOne: false
             referencedRelation: "communes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commune_risk_profiles_commune_id_fkey"
+            columns: ["commune_id"]
+            isOneToOne: false
+            referencedRelation: "communes_geojson"
             referencedColumns: ["id"]
           },
           {
@@ -366,6 +380,48 @@ export type Database = {
       }
     }
     Views: {
+      communes_geojson: {
+        Row: {
+          city: string | null
+          comuna_numero: number | null
+          country: string | null
+          created_at: string | null
+          department: string | null
+          geometry_geojson: Json | null
+          geometry_source: string | null
+          id: string | null
+          name: string | null
+          updated_at: string | null
+          zona_id: string | null
+        }
+        Insert: {
+          city?: string | null
+          comuna_numero?: number | null
+          country?: string | null
+          created_at?: string | null
+          department?: string | null
+          geometry_geojson?: never
+          geometry_source?: string | null
+          id?: string | null
+          name?: string | null
+          updated_at?: string | null
+          zona_id?: string | null
+        }
+        Update: {
+          city?: string | null
+          comuna_numero?: number | null
+          country?: string | null
+          created_at?: string | null
+          department?: string | null
+          geometry_geojson?: never
+          geometry_source?: string | null
+          id?: string | null
+          name?: string | null
+          updated_at?: string | null
+          zona_id?: string | null
+        }
+        Relationships: []
+      }
       geography_columns: {
         Row: {
           coord_dimension: number | null
