@@ -1,0 +1,61 @@
+/**
+ * Euler-based route risk accumulator — orchestration layer.
+ *
+ * Applies the Euler ODE integrator to a full RouteAnalysis, replacing
+ * accumulatedRiskScore/accumulatedRiskLevel per segment and the final risk
+ * totals, while preserving every other field immutably.
+ *
+ * NOT the primary output yet — used in parallel with calculatePreliminaryAccumulatedRisk
+ * for comparison. Replace the preliminary model only after validating results.
+ */
+
+import type { RouteAnalysis } from "@/components/map/routes/route-types";
+import type { CommuneRisk } from "@/lib/risk/risk-types";
+import { buildEulerRiskSegmentsFromRouteSegments } from "@/lib/risk/build-euler-risk-input";
+import { calculateEulerRiskEvolution } from "@/lib/risk/euler-risk-integrator";
+import { scoreToRiskLevel } from "@/lib/risk/risk-level";
+
+const DEFAULT_INITIAL_RISK_SCORE = 50;
+
+/**
+ * Computes Euler-integrated accumulated risk for every segment in a RouteAnalysis.
+ *
+ * Pure function: no I/O, no React, no MapLibre, no Next.js runtime deps.
+ *
+ * @param routeAnalysis   Existing route produced by the preliminary model.
+ * @param riskData        Full CommuneRisk dataset (e.g. from loadCommunesRisk()).
+ * @param initialRiskScore Starting accumulated risk (default 50 — neutral mid-range).
+ * @returns               New RouteAnalysis with Euler-derived accumulated risk values.
+ */
+export function calculateEulerAccumulatedRouteRisk(
+  routeAnalysis: RouteAnalysis,
+  riskData: CommuneRisk[],
+  initialRiskScore = DEFAULT_INITIAL_RISK_SCORE,
+): RouteAnalysis {
+  const eulerSegmentsInput = buildEulerRiskSegmentsFromRouteSegments(
+    routeAnalysis.segments,
+    riskData,
+  );
+
+  const evolution = calculateEulerRiskEvolution(initialRiskScore, eulerSegmentsInput);
+
+  const segments = routeAnalysis.segments.map((segment, index) => {
+    const eulerSegment = evolution.segments[index];
+
+    // Guard against index misalignment (should not occur, but safe is safe).
+    if (!eulerSegment) return segment;
+
+    return {
+      ...segment,
+      accumulatedRiskScore: eulerSegment.riskScore,
+      accumulatedRiskLevel: scoreToRiskLevel(eulerSegment.riskScore),
+    };
+  });
+
+  return {
+    ...routeAnalysis,
+    segments,
+    finalRiskScore: evolution.finalRiskScore,
+    finalRiskLevel: evolution.finalRiskLevel,
+  };
+}

@@ -8,6 +8,32 @@ import {
   OrsRoutingError,
   OrsNetworkError,
 } from "@/lib/openroute/openroute-errors";
+import { loadCommunesRisk } from "@/lib/risk/load-communes-risk";
+import { calculateEulerAccumulatedRouteRisk } from "@/lib/risk/euler-accumulated-route-risk";
+import type { RouteAnalysis } from "@/components/map/routes/route-types";
+
+async function logEulerComparison(route: RouteAnalysis): Promise<void> {
+  try {
+    const riskData = await loadCommunesRisk();
+    const euler = calculateEulerAccumulatedRouteRisk(route, riskData);
+    if (process.env.NODE_ENV !== "production") {
+      console.log("[safe-maps] risk-model-comparison", {
+        mode: route.mode,
+        segments: route.segments.length,
+        preliminary: {
+          finalRiskScore: route.finalRiskScore,
+          finalRiskLevel: route.finalRiskLevel,
+        },
+        euler: {
+          finalRiskScore: euler.finalRiskScore,
+          finalRiskLevel: euler.finalRiskLevel,
+        },
+      });
+    }
+  } catch {
+    // Comparison is observability-only; never propagate errors to the caller.
+  }
+}
 
 interface AnalyzeRouteRequest {
   origin: string;
@@ -63,6 +89,7 @@ export async function POST(req: NextRequest) {
       const orsResponse = await getDrivingRoute(originCoords, destinationCoords);
       const route = await normalizeOpenRouteResponse(orsResponse, origin.trim(), destination.trim());
 
+      void logEulerComparison(route);
       return NextResponse.json(route);
     } catch (err) {
       if (err instanceof OrsApiKeyMissingError) {
@@ -102,5 +129,6 @@ export async function POST(req: NextRequest) {
     destination: destination.trim(),
   });
 
+  void logEulerComparison(route);
   return NextResponse.json(route);
 }
