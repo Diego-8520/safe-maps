@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState, useMemo, useEffect, type ReactNode } from "react";
 import MapLibreView from "@/components/map/map-libre-view";
 import RiskLegend from "@/components/map/risk-legend";
 import MapSidebar from "@/components/map/sidebar/map-sidebar";
@@ -10,6 +10,7 @@ import type { EnrichedFeatureProperties } from "@/components/map/types";
 import type { RouteAnalysis } from "@/components/map/routes/route-types";
 import { analyzeRoute } from "@/components/map/routes/providers/route-provider";
 import { validateRouteInput } from "@/components/map/routes/services/route-validation";
+import { loadEnrichedGeojson } from "@/components/map/data/load-communes";
 
 // Visible on desktop only — mobile uses MobileMapControls instead.
 function MapToolbar() {
@@ -38,15 +39,17 @@ function CoordWatermark() {
 function MapArea({
   onCommuneSelect,
   route,
+  communesGeojson,
   children,
 }: {
-  onCommuneSelect: (c: EnrichedFeatureProperties) => void;
+  onCommuneSelect: (id: number) => void;
   route: RouteAnalysis | null;
+  communesGeojson: GeoJSON.FeatureCollection | null;
   children?: ReactNode;
 }) {
   return (
     <main className="flex-1 relative overflow-hidden">
-      <MapLibreView onCommuneSelect={onCommuneSelect} route={route} />
+      <MapLibreView onCommuneSelect={onCommuneSelect} route={route} communesGeojson={communesGeojson} />
       <MapToolbar />
       <RiskLegend />
       <CoordWatermark />
@@ -56,14 +59,29 @@ function MapArea({
 }
 
 export default function MapLayout() {
-  const [selected, setSelected] = useState<EnrichedFeatureProperties | null>(
-    null,
-  );
+  const [communesGeojson, setCommunesGeojson] = useState<GeoJSON.FeatureCollection | null>(null);
+  const [selectedCommuneId, setSelectedCommuneId] = useState<number | null>(null);
   const [route, setRoute] = useState<RouteAnalysis | null>(null);
   const [origin, setOrigin] = useState("Centro, Cali");
   const [destination, setDestination] = useState("Aguablanca, Cali");
   const [routeError, setRouteError] = useState<string | null>(null);
   const [isAnalyzingRoute, setIsAnalyzingRoute] = useState(false);
+
+  useEffect(() => {
+    loadEnrichedGeojson()
+      .then(setCommunesGeojson)
+      .catch((err: unknown) => {
+        console.error("[MapLayout] Failed to load commune data:", err);
+      });
+  }, []);
+
+  const selectedCommune = useMemo<EnrichedFeatureProperties | null>(() => {
+    if (selectedCommuneId === null || !communesGeojson) return null;
+    const feature = communesGeojson.features.find(
+      (f) => (f.properties as EnrichedFeatureProperties).comuna === selectedCommuneId,
+    );
+    return feature ? (feature.properties as EnrichedFeatureProperties) : null;
+  }, [selectedCommuneId, communesGeojson]);
 
   async function handleAnalyzeRoute() {
     const validation = validateRouteInput(origin, destination);
@@ -109,14 +127,14 @@ export default function MapLayout() {
     <div className="flex flex-col md:flex-row h-full overflow-hidden">
       {/* Desktop sidebar — hidden on mobile */}
       <div className="hidden md:flex md:flex-col md:w-80 md:shrink-0 md:h-full">
-        <MapSidebar selected={selected} route={route} {...routeInputProps} />
+        <MapSidebar selected={selectedCommune} route={route} {...routeInputProps} />
       </div>
       {/* Map — fills all space; on mobile it's the only flex child */}
-      <MapArea onCommuneSelect={(c) => setSelected(c)} route={route}>
+      <MapArea onCommuneSelect={setSelectedCommuneId} route={route} communesGeojson={communesGeojson}>
         {/* Mobile overlays — hidden on desktop */}
         <div className="md:hidden">
           <MobileMapControls {...routeInputProps} />
-          <MobileBottomSheet route={route} selected={selected} />
+          <MobileBottomSheet route={route} selected={selectedCommune} />
         </div>
       </MapArea>
     </div>
