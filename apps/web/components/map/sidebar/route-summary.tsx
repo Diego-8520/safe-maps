@@ -2,9 +2,6 @@ import { IconShield } from "@/components/map/ui/map-icons";
 import type { RouteAnalysis, RouteRiskLevel } from "@/components/map/routes/route-types";
 import { formatDistanceKm } from "@/components/map/routes/route-utils";
 
-// Reference value for delta display — mid-range neutral start.
-const INITIAL_RISK = 50;
-
 const RISK_BADGE_STYLES: Record<RouteRiskLevel, { dot: string; text: string; bg: string; label: string }> = {
   low:    { dot: "bg-emerald-400", text: "text-emerald-300", bg: "bg-emerald-500/10 border-emerald-500/25", label: "Bajo" },
   medium: { dot: "bg-amber-400",   text: "text-amber-300",   bg: "bg-amber-500/10 border-amber-500/25",     label: "Medio" },
@@ -21,7 +18,9 @@ function RiskBadge({ level }: { level: RouteRiskLevel }) {
   );
 }
 
-function DeltaChip({ delta }: { delta: number }) {
+function DeltaChip({ delta, initialRiskScore }: { delta: number; initialRiskScore: number }) {
+  const INITIAL_RISK = initialRiskScore;
+
   if (delta > 0) {
     return (
       <span className="text-xs font-mono text-red-400">
@@ -79,7 +78,7 @@ export default function RouteSummary({ route }: { route: RouteAnalysis | null })
     ? segments.reduce((max, s) => (s.localRiskScore > max.localRiskScore ? s : max), segments[0])
     : null;
 
-  const delta = route.finalRiskScore - INITIAL_RISK;
+  const delta = Math.round((route.finalRiskScore - route.initialRiskScore) * 10) / 10;
 
   return (
     <div className="px-5 py-5 border-b border-white/5">
@@ -97,8 +96,13 @@ export default function RouteSummary({ route }: { route: RouteAnalysis | null })
           <RiskBadge level={route.finalRiskLevel} />
         </InfoRow>
 
+        <InfoRow label="Riesgo inicial">
+          <span className="text-xs font-mono text-slate-500">{route.initialRiskScore}/100</span>
+          <RiskBadge level={route.initialRiskLevel} />
+        </InfoRow>
+
         <InfoRow label="Cambio acumulado">
-          <DeltaChip delta={delta} />
+          <DeltaChip delta={delta} initialRiskScore={route.initialRiskScore} />
         </InfoRow>
 
         {maxLocalSegment && (

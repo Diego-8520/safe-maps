@@ -14,7 +14,11 @@ export interface SupabaseRestClient {
   get<T>(table: string, params: Record<string, string>): Promise<T[]>;
 }
 
-function buildRestUrl(baseUrl: string, table: string, params: Record<string, string>): URL {
+function buildRestUrl(
+  baseUrl: string,
+  table: string,
+  params: Record<string, string>,
+): URL {
   const url = new URL(`/rest/v1/${table}`, baseUrl);
 
   for (const [key, value] of Object.entries(params)) {
@@ -24,20 +28,26 @@ function buildRestUrl(baseUrl: string, table: string, params: Record<string, str
   return url;
 }
 
-function createErrorMessage(table: string, status: number, body: string): string {
+function createErrorMessage(
+  table: string,
+  status: number,
+  body: string,
+): string {
   const detail = body.trim() ? `: ${body}` : "";
   return `Supabase query failed for ${table} (${status})${detail}`;
 }
 
 /**
  * Create a Supabase REST client using publishable key when available.
- * 
+ *
  * With RLS enabled, the publishable key is sufficient for SELECT operations.
  * Falls back to secretKey if publishable key is not configured.
- * 
+ *
  * @param options.useSecretKey - If true, use secretKey instead of publishableKey
  */
-export function createSupabaseServerClient(options?: { useSecretKey?: boolean }): SupabaseRestClient {
+export function createSupabaseServerClient(options?: {
+  useSecretKey?: boolean;
+}): SupabaseRestClient {
   const config = getSupabaseServerConfig();
   const url = config.url;
 

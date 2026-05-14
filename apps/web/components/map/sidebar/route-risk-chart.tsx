@@ -39,10 +39,10 @@ export default function RouteRiskChart({ route }: { route: RouteAnalysis | null 
 
   const { segments, totalDistanceMeters, finalRiskScore } = route;
 
-  // Anchor at x=0 using first segment's localRiskScore — the Euler initial condition R₀
-  const r0 = segments[0].localRiskScore;
+  // Anchor at x=0 using the origin commune risk - the Euler initial condition R0
+  const r0 = route.initialRiskScore;
   const pts: ChartPt[] = [
-    { x: sx(0, totalDistanceMeters), y: sy(r0), level: segments[0].localRiskLevel },
+    { x: sx(0, totalDistanceMeters), y: sy(r0), level: route.initialRiskLevel },
   ];
 
   let cumDist = 0;

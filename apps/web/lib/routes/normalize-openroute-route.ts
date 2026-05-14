@@ -47,6 +47,12 @@ export async function normalizeOpenRouteResponse(
     communeRiskRepository.getAll(),
   ]);
 
+  const originCommuneId = findCommuneForPoint(allCoords[0], features);
+  const {
+    localRiskScore: initialRiskScore,
+    localRiskLevel: initialRiskLevel,
+  } = findRiskByCommune(originCommuneId, riskData);
+
   const rawSegments: RouteSegment[] = chunks.map((chunk, index) => {
     const midpoint = midpointOf(chunk.coords);
     const communeId = findCommuneForPoint(midpoint, features);
@@ -72,11 +78,13 @@ export async function normalizeOpenRouteResponse(
     destinationLabel,
     totalDistanceMeters: Math.round(distance),
     estimatedDurationMinutes: Math.round(duration / 60),
-    finalRiskScore: 50,
-    finalRiskLevel: "medium",
+    initialRiskScore,
+    initialRiskLevel,
+    finalRiskScore: initialRiskScore,
+    finalRiskLevel: initialRiskLevel,
     mode: "real",
     segments: rawSegments,
   };
 
-  return calculateEulerAccumulatedRouteRisk(rawRoute, riskData);
+  return calculateEulerAccumulatedRouteRisk(rawRoute, riskData, initialRiskScore);
 }

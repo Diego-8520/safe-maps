@@ -41,6 +41,12 @@ export interface RouteAnalysis {
   estimatedDurationMinutes: number;
 
   /**
+   * Condicion inicial Euler R(0), resuelta en el punto de origen real de la ruta.
+   */
+  initialRiskScore: number;
+  initialRiskLevel: RouteRiskLevel;
+
+  /**
    * Riesgo acumulado final del recorrido.
    */
   finalRiskScore: number;

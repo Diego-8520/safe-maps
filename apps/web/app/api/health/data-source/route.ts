@@ -1,4 +1,7 @@
-import { getCommuneRepository, getCommuneRiskRepository } from "@/lib/repositories/repository-factory";
+import {
+  getCommuneRepository,
+  getCommuneRiskRepository,
+} from "@/lib/repositories/repository-factory";
 import { getSafeMapsDataSource } from "@/lib/supabase/config";
 
 interface HealthResponse {
