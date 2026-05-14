@@ -1,71 +1,80 @@
-# Safe Maps — Route Risk Pipeline
+# Safe Maps — Pipeline de análisis de rutas
 
-Documents the current end-to-end flow from user input to the rendered accumulated-risk route.
+Documentación técnica del flujo completo desde la entrada del usuario hasta la visualización del riesgo acumulado.
 
-> **Data status:** commune geometries are official (IDESC / QGIS). Risk variables (`comunas-risk.json`) are mock/simulated. The model is academic/experimental and does **not** represent real criminal intelligence.
+> **Estado de datos:** geometría de comunas oficial (IDESC/QGIS). Variables de riesgo (`comunas-risk.json`) simuladas. El modelo es académico/experimental y **no representa inteligencia criminal real**.
 
 ---
 
-## 1. Pipeline Overview
+## 1. Diagrama del flujo
 
 ```
-User enters origin + destination
+Usuario ingresa origen y destino
          │
          ▼
-analyzeRoute()          (apps/web/components/map/routes/providers/route-provider.ts)
+analyzeRoute()                    (components/map/routes/providers/route-provider.ts)
          │
          ▼
-POST /api/routes/analyze (apps/web/app/api/routes/analyze/route.ts)
+POST /api/routes/analyze          (app/api/routes/analyze/route.ts)
          │
-         ├─ geocodeAddress(origin)      ─┐
-         └─ geocodeAddress(destination)  ┘  → GeocodedLocation { label, coordinates }
-                                                 (openroute-client.ts — ORS Geocode API)
+         ├── geocodeAddress(origin)      ─┐
+         └── geocodeAddress(destination) ─┘  → GeocodedLocation { label, coordinates }
+                                               (lib/openroute/openroute-client.ts)
          │
          ▼
-getDrivingRoute(originCoords, destinationCoords)
-         │  → OrsDirectionsResponse (real street geometry)
+getDrivingRoute(originCoords, destCoords)
+         │  → OrsDirectionsResponse (geometría real de calles)
          ▼
-normalizeOpenRouteResponse(orsResponse, originLabel, destinationLabel)
+normalizeOpenRouteResponse(orsResponse, originLabel, destLabel)
          │
-         ├─ segmentByDistance(coords)          400m chunks with Haversine overlap
-         ├─ loadCommunesGeoJSON()              official 22-commune GeoJSON
-         ├─ findCommuneForPoint(midpoint)      point-in-polygon per segment
-         ├─ findRiskByCommune(communeId)       local risk variables from dataset
-         └─ buildRawRouteAnalysis()
+         ├── segmentByDistance(coords)         tramos ~400 m (Haversine)
+         ├── loadCommunesGeoJSON()              GeoJSON oficial de 22 comunas
+         ├── findCommuneForPoint(midpoint)      communeId por segmento (ray-casting)
+         ├── findRiskByCommune(communeId)       variables C, S, V, I, F del dataset
+         └── buildRawRouteAnalysis()
          │
          ▼
 calculateEulerAccumulatedRouteRisk(rawRoute, riskData)
          │  riskModelVersion: euler-v1
-         ├─ buildEulerRiskSegmentsFromRouteSegments()
-         ├─ calculateEulerRiskEvolution(initialRiskScore, segments)
-         └─ returns RouteAnalysis with accumulatedRisk* filled per segment
+         ├── buildEulerRiskSegmentsFromRouteSegments()
+         ├── calculateEulerRiskEvolution(R0, segments)
+         └── retorna RouteAnalysis con accumulatedRisk* por segmento
          │
          ▼
 NextResponse.json(route)
          │
          ▼
-Frontend renders:
-  ├─ MapLibreView      (route coloured by accumulatedRiskLevel)
-  ├─ RouteSummary      (finalRiskScore, originLabel, destinationLabel)
-  ├─ RouteRiskChart    (Euler curve — SVG)
-  ├─ EulerModelPanel   (formula + variable table)
-  └─ RouteSegmentsPanel (per-segment table, up to 8 rows)
+Frontend renderiza:
+  ├── MapLibreView           (ruta coloreada por accumulatedRiskLevel)
+  ├── RouteSummary           (finalRiskScore, labels de origen y destino)
+  ├── RouteRiskChart         (curva Euler — SVG puro)
+  ├── EulerModelPanel        (fórmula y tabla de variables)
+  └── RouteSegmentsPanel     (tabla por segmento, hasta 8 filas)
 ```
 
 ---
 
-## 2. Data Contracts
+## 2. Contratos de datos
+
+### `GeocodedLocation`
+
+```ts
+interface GeocodedLocation {
+  label: string;         // Label resuelto por ORS (properties.label)
+  coordinates: [number, number]; // [longitud, latitud]
+}
+```
 
 ### `RouteAnalysis`
 
 ```ts
 interface RouteAnalysis {
   id: string;                        // "real-route-<timestamp>"
-  originLabel: string;               // ORS-resolved geocode label
-  destinationLabel: string;          // ORS-resolved geocode label
-  totalDistanceMeters: number;       // rounded integer meters
-  estimatedDurationMinutes: number;  // rounded integer minutes
-  finalRiskScore: number;            // Euler R at last segment (0–100)
+  originLabel: string;               // Label resuelto por ORS
+  destinationLabel: string;          // Label resuelto por ORS
+  totalDistanceMeters: number;       // Metros totales (entero)
+  estimatedDurationMinutes: number;  // Minutos estimados (entero)
+  finalRiskScore: number;            // R de Euler al último segmento (0–100)
   finalRiskLevel: RouteRiskLevel;    // "low" | "medium" | "high"
   mode: "real";
   segments: RouteSegment[];
@@ -78,155 +87,209 @@ interface RouteAnalysis {
 interface RouteSegment {
   id: string;                        // "real-seg-001", "real-seg-002", …
   coordinates: RouteCoordinate[];    // { lng, lat }[]
-  distanceMeters: number;            // Haversine length of this chunk
-  communeId: number | null;          // null if outside all commune polygons
-  localRiskScore: number;            // from comunas-risk.json (0–100)
+  distanceMeters: number;            // Longitud Haversine del tramo
+  communeId: number | null;          // null si está fuera de todas las comunas
+  localRiskScore: number;            // Puntuación local de la comuna (0–100)
   localRiskLevel: RouteRiskLevel;
-  accumulatedRiskScore: number;      // Euler R_n at end of this segment (1 decimal)
+  accumulatedRiskScore: number;      // R(n) al final del segmento (1 decimal)
   accumulatedRiskLevel: RouteRiskLevel;
 }
 ```
 
-### Risk levels (single source of truth: `risk-level.ts`)
+### Umbrales de clasificación (fuente única)
 
-| Score | Level |
-|-------|-------|
-| < 40  | `low` |
+| Puntuación | Nivel |
+|-----------|-------|
+| < 40 | `low` |
 | 40–69 | `medium` |
-| ≥ 70  | `high` |
+| ≥ 70 | `high` |
+
+Definidos en `apps/web/lib/risk/risk-level.ts` → `scoreToRiskLevel()`.
 
 ---
 
-## 3. Euler ODE Model
+## 3. Geocodificación
 
-### Formula
+**Archivo:** `lib/openroute/openroute-client.ts` → `geocodeAddress(address)`
 
-```
-R_{n+1} = clamp( R_n + f(C, S, V, I, F) · Δx_km , 0, 100 )
-```
+1. `enrichAddress()` normaliza la entrada:
+   - Si no contiene `"Cali"` ni `"Colombia"`, agrega `", Cali, Colombia"`.
+   - Resuelve alias conocidos (ej. `"univalle"` → dirección canónica).
+2. Llama a ORS Geocode API con `boundary.country=CO` y `focus.point` centrado en Cali.
+3. Si no hay resultados: lanza `OrsGeocodingError`.
+4. Retorna `GeocodedLocation { label, coordinates }` donde `label = properties.label` de ORS (fallback: string enriquecido).
 
-### Risk derivative
-
-```
-f(C, S, V, I, F) = a·C̃ − b·S̃ − d·Ṽ − e·Ĩ + h·F̃
-```
-
-Where each variable is normalised to `[0, 1]` (`X̃ = X / 100`) and the coefficients are:
-
-| Symbol | Variable         | Direction | Coefficient |
-|--------|------------------|-----------|-------------|
-| C      | Criminalidad     | ↑ risk    | a = 30      |
-| S      | Seguridad        | ↓ risk    | b = 15      |
-| V      | Vigilancia       | ↓ risk    | d = 10      |
-| I      | Iluminación      | ↓ risk    | e = 10      |
-| F      | Flujo personas   | ↑ risk    | h = 8       |
-
-### Initial condition
-
-`R_0 = segments[0].localRiskScore` (first segment's local risk).  
-If no segments exist, fallback `R_0 = 50`.
-
-### Fallback for unknown communes
-
-Segments with `communeId = null` use neutral variables (`C=S=V=I=F=50`), producing `f ≈ +1.5` (slight positive drift — conservative, not zero).
+El `label` resuelto se almacena en `RouteAnalysis.originLabel` y `destinationLabel` y se muestra en el sidebar.
 
 ---
 
-## 4. Geocoding
+## 4. Ruteo
 
-`geocodeAddress(address)` in `openroute-client.ts`:
+**Archivo:** `lib/openroute/openroute-client.ts` → `getDrivingRoute(originCoords, destCoords)`
 
-1. `enrichAddress()` normalises the input — appends `", Cali, Colombia"` when missing, and hard-codes the canonical address for known ambiguous locations (e.g. `"univalle"`).
-2. Calls ORS Geocode API with `boundary.country=CO` and `focus.point` biased to Cali centre.
-3. Returns `GeocodedLocation { label, coordinates }` where `label = properties.label` from ORS (fallback: the enriched input string).
-
-The resolved `label` is stored directly in `RouteAnalysis.originLabel` / `destinationLabel`, so the sidebar shows what ORS actually geocoded.
+- Llama a ORS Directions API (perfil `driving-car`).
+- Retorna `OrsDirectionsResponse` con geometría de la ruta en formato GeoJSON LineString.
+- Si ORS retorna error: lanza `OrsRoutingError`.
 
 ---
 
-## 5. Segmentation
+## 5. Segmentación
 
-`segmentByDistance()` in `route-segmentation.ts`:
+**Archivo:** `lib/routes/route-segmentation.ts` → `segmentByDistance(coords)`
 
-- Target chunk size: **400 m** (Haversine).
-- Last coordinate of each chunk is reused as first of the next (path continuity).
-- Typical urban route in Cali → 8–15 segments.
-- Risk is sampled at the **midpoint** of each chunk for commune lookup.
+- Tamaño objetivo de cada tramo: **400 m** (Haversine).
+- El último punto de cada tramo se reutiliza como primer punto del siguiente (continuidad).
+- El riesgo se evalúa en el **punto medio** de cada tramo para la búsqueda de comuna.
+- Ruta típica en Cali: 8–15 segmentos.
 
 ---
 
-## 6. Key Source Files
+## 6. Asignación de comuna
+
+**Archivo:** `lib/geo/find-commune-for-point.ts` → `findCommuneForPoint(lng, lat)`
+
+- Carga `comunas-cali.geojson` (cacheado en memoria).
+- Aplica **ray-casting** (`lib/geo/point-in-polygon.ts`) por cada Feature del GeoJSON.
+- Retorna `communeId` (número) o `null` si el punto cae fuera de todas las comunas.
+
+**Fallback para `communeId = null`:**  
+Se usan variables neutras `C=S=V=I=F=50`, produciendo `f ≈ +1.5` (deriva positiva conservadora, no cero).
+
+---
+
+## 7. Modelo de riesgo Euler
+
+**Archivos:** `lib/risk/`
+
+```
+euler-accumulated-route-risk.ts   ← orquestación principal
+build-euler-risk-input.ts         ← RouteSegment[] → EulerSegmentInput[]
+euler-risk-integrator.ts          ← bucle de Euler paso a paso
+risk-derivative.ts                ← función pura f(C, S, V, I, F)
+risk-level.ts                     ← scoreToRiskLevel (fuente única de umbrales)
+```
+
+### Fórmula
+
+```
+R(n+1) = clamp( R(n) + f(C, S, V, I, F) · Δx_km , 0, 100 )
+```
+
+```
+f(C, S, V, I, F) = 30·C̃ − 15·S̃ − 10·Ṽ − 10·Ĩ + 8·F̃
+```
+
+Donde `X̃ = X / 100` (normalización a [0, 1]).
+
+### Condición inicial
+
+`R(0) = localRiskScore` del primer segmento. Fallback: `R(0) = 50`.
+
+---
+
+## 8. División server-side / frontend
+
+| Paso | Dónde ocurre |
+|------|-------------|
+| Geocodificación | Server-side (API Route) |
+| Ruteo ORS | Server-side (API Route) |
+| Segmentación Haversine | Server-side (API Route) |
+| Asignación de comuna (ray-casting) | Server-side (API Route) |
+| Riesgo local (lookup JSON) | Server-side (API Route) |
+| Modelo Euler | Server-side (API Route) |
+| Renderizado de mapa | Frontend (MapLibre GL JS) |
+| Gráfica SVG | Frontend (React) |
+| Paneles del sidebar | Frontend (React) |
+
+La clave `OPENROUTE_API_KEY` nunca sale del servidor.
+
+---
+
+## 9. Errores posibles
+
+| Error | Tipo | Código HTTP |
+|-------|------|-------------|
+| API key de ORS no configurada | `OrsApiKeyMissingError` | 500 |
+| Dirección no encontrada por geocodificación | `OrsGeocodingError` | 422 |
+| Ruta no encontrada entre los puntos | `OrsRoutingError` | 422 |
+| Fallo de red al contactar ORS | `OrsNetworkError` | 503 |
+| Body de request inválido | — | 400 |
+| Segmento fuera de comunas | `communeId = null` | fallback neutro |
+
+---
+
+## 10. Archivos principales involucrados
 
 ### API layer
 
-| File | Responsibility |
-|------|---------------|
-| `apps/web/app/api/routes/analyze/route.ts` | POST handler, validation, orchestration |
-| `apps/web/lib/openroute/openroute-client.ts` | geocodeAddress, getDrivingRoute |
-| `apps/web/lib/openroute/openroute-types.ts` | ORS response types, GeocodedLocation |
-| `apps/web/lib/openroute/openroute-errors.ts` | typed error classes |
+| Archivo | Responsabilidad |
+|---------|----------------|
+| `app/api/routes/analyze/route.ts` | POST handler, validación, orquestación |
+| `lib/openroute/openroute-client.ts` | `geocodeAddress`, `getDrivingRoute` |
+| `lib/openroute/openroute-types.ts` | Tipos ORS, `GeocodedLocation` |
+| `lib/openroute/openroute-errors.ts` | Clases de error tipadas |
 
-### Route normalisation
+### Normalización de ruta
 
-| File | Responsibility |
-|------|---------------|
-| `apps/web/lib/routes/normalize-openroute-route.ts` | ORS → RouteAnalysis orchestration |
-| `apps/web/lib/routes/route-segmentation.ts` | Haversine chunking |
+| Archivo | Responsabilidad |
+|---------|----------------|
+| `lib/routes/normalize-openroute-route.ts` | ORS → RouteAnalysis (orquestación) |
+| `lib/routes/route-segmentation.ts` | Segmentación Haversine |
 
 ### Geo
 
-| File | Responsibility |
-|------|---------------|
-| `apps/web/lib/geo/find-commune-for-point.ts` | communeId lookup per midpoint |
-| `apps/web/lib/geo/point-in-polygon.ts` | ray-casting algorithm |
-| `apps/web/lib/geo/load-communes-geojson.ts` | cached GeoJSON loader |
+| Archivo | Responsabilidad |
+|---------|----------------|
+| `lib/geo/find-commune-for-point.ts` | communeId por punto medio |
+| `lib/geo/point-in-polygon.ts` | Ray-casting |
+| `lib/geo/load-communes-geojson.ts` | Loader cacheado de GeoJSON |
 
-### Risk
+### Riesgo
 
-| File | Responsibility |
-|------|---------------|
-| `apps/web/lib/risk/risk-derivative.ts` | pure `f(C,S,V,I,F)` computation |
-| `apps/web/lib/risk/euler-risk-integrator.ts` | Euler step loop |
-| `apps/web/lib/risk/build-euler-risk-input.ts` | RouteSegment[] → EulerSegmentInput[] |
-| `apps/web/lib/risk/euler-accumulated-route-risk.ts` | orchestration, returns RouteAnalysis |
-| `apps/web/lib/risk/accumulated-risk.ts` | preliminary model (inactive, kept for rollback) |
-| `apps/web/lib/risk/risk-level.ts` | scoreToRiskLevel — single threshold source |
-| `apps/web/lib/risk/load-communes-risk.ts` | cached risk dataset loader |
-| `apps/web/lib/risk/find-risk-by-commune.ts` | CommuneRisk lookup by communeId |
+| Archivo | Responsabilidad |
+|---------|----------------|
+| `lib/risk/risk-derivative.ts` | Función pura `f(C,S,V,I,F)` |
+| `lib/risk/euler-risk-integrator.ts` | Bucle de Euler |
+| `lib/risk/build-euler-risk-input.ts` | `RouteSegment[]` → `EulerSegmentInput[]` |
+| `lib/risk/euler-accumulated-route-risk.ts` | Orquestación Euler, retorna `RouteAnalysis` |
+| `lib/risk/accumulated-risk.ts` | Modelo preliminar (inactivo, conservado para rollback) |
+| `lib/risk/risk-level.ts` | `scoreToRiskLevel` — fuente única de umbrales |
+| `lib/risk/load-communes-risk.ts` | Loader cacheado del dataset de riesgo |
+| `lib/risk/find-risk-by-commune.ts` | Lookup de `CommuneRisk` por `communeId` |
 
 ### Frontend
 
-| File | Responsibility |
-|------|---------------|
-| `apps/web/components/map/map-layout.tsx` | state + analyzeRoute orchestration |
-| `apps/web/components/map/map-libre-view.tsx` | MapLibre GL, route layer rendering |
-| `apps/web/components/map/sidebar/route-summary.tsx` | final risk + resolved labels |
-| `apps/web/components/map/sidebar/route-risk-chart.tsx` | SVG Euler curve chart |
-| `apps/web/components/map/sidebar/euler-model-panel.tsx` | formula + variable explanation |
-| `apps/web/components/map/sidebar/route-segments-panel.tsx` | per-segment table |
+| Archivo | Responsabilidad |
+|---------|----------------|
+| `components/map/map-layout.tsx` | Estado + disparo de `analyzeRoute` |
+| `components/map/map-libre-view.tsx` | MapLibre GL, capa de ruta coloreada |
+| `components/map/sidebar/route-summary.tsx` | Riesgo final + labels resueltos |
+| `components/map/sidebar/route-risk-chart.tsx` | Gráfica SVG de curva Euler |
+| `components/map/sidebar/euler-model-panel.tsx` | Fórmula + tabla de variables |
+| `components/map/sidebar/route-segments-panel.tsx` | Tabla por segmento |
 
 ---
 
-## 7. Known Limitations
+## 11. Qué se migrará a PostGIS (fase futura)
 
-| Area | Limitation |
+| Paso actual | Migración prevista |
+|------------|-------------------|
+| `loadCommunesGeoJSON()` — archivo local | Tabla `communes` en PostGIS |
+| `findCommuneForPoint()` — ray-casting JS | `ST_Within` en consulta SQL |
+| `loadCommunesRisk()` — JSON local | Tabla `commune_risk_profiles` en PostgreSQL |
+| Sin persistencia de análisis | Tablas `route_analyses` + `route_segments` |
+
+---
+
+## 12. Limitaciones del pipeline actual
+
+| Área | Limitación |
 |------|-----------|
-| Geocoding | Ambiguous place names can resolve incorrectly. Hard-coded normalisations only cover known edge cases. |
-| Risk data | `comunas-risk.json` is mock/simulated — not sourced from real criminal data. |
-| Commune assignment | Segments outside all commune polygons get `communeId = null` and fallback variables. |
-| Segmentation | Dependent on ORS geometry density; sparse geometries may produce fewer, longer segments. |
-| No autocomplete | User must type exact-enough addresses for ORS to geocode correctly. |
-| No alternatives | Only the single fastest driving route is analysed. |
-| No persistence | No database writes. Each analysis is stateless. |
-| No PostGIS | Spatial join is done client-side in JS (ray-casting). |
-
----
-
-## 8. Recommended Next Steps
-
-1. **Geocoding confidence UI** — show a warning when ORS confidence score is below a threshold.
-2. **Candidate selection** — offer the top 3 geocode results and let the user confirm.
-3. **Real risk data** — integrate actual crime/security indicators from official Cali sources.
-4. **PostGIS / Supabase** — move spatial join server-side once frontend is stable.
-5. **Alternative routes** — request up to 3 ORS alternatives and compare accumulated risk.
-6. **Route text analysis** — generate a human-readable safety narrative per route.
+| Geocodificación | Nombres ambiguos pueden resolverse incorrectamente. Las normalizaciones cubren solo casos conocidos. |
+| Datos de riesgo | `comunas-risk.json` es simulado, no proviene de datos criminales reales. |
+| Asignación de comuna | Segmentos fuera de todas las comunas reciben `communeId = null` y variables neutras. |
+| Segmentación | Depende de la densidad de puntos ORS; geometrías escasas producen segmentos más largos. |
+| Sin autocompletado | El usuario debe ingresar direcciones suficientemente específicas para que ORS las resuelva. |
+| Sin rutas alternativas | Solo se analiza la ruta más rápida. |
+| Sin persistencia | Cada análisis es efímero. No se guarda en base de datos. |
+| Join espacial en JS | Ray-casting correcto pero no optimizado para datasets grandes. |
