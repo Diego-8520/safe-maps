@@ -103,7 +103,7 @@ Si no hay segmentos, `R(0) = 50` (valor neutro).
 
 Un segmento de riesgo local alto en el tramo 5 no provoca un salto abrupto en el acumulado: el cambio depende de la longitud del segmento y del estado previo de R.
 
-En la visualización, el mapa colorea cada tramo con `localRiskLevel` para mostrar el riesgo inmediato de la comuna actual. La gráfica Euler conserva `accumulatedRiskLevel` y `accumulatedRiskScore` para representar la evolución acumulada de la ruta.
+En la visualización, el mapa colorea cada tramo con `localRiskLevel` para mostrar el riesgo inmediato de la comuna actual. La gráfica Euler conserva `accumulatedRiskLevel` y `accumulatedRiskScore` para representar la evolución acumulada de la ruta, y ancla su primer punto en `R(0) = localRiskScore` del primer segmento.
 
 ---
 

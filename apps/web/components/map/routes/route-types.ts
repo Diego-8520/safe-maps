@@ -25,8 +25,9 @@ export interface RouteSegment {
   localRiskLevel: RouteRiskLevel;
 
   /**
-   * Riesgo acumulado hasta este segmento.
-   * Este es el valor que debe usarse para colorear la ruta.
+   * Riesgo acumulado al final de este segmento.
+   * La grafica Euler y el resumen final usan estos valores acumulados.
+   * El mapa colorea cada tramo con localRiskLevel.
    */
   accumulatedRiskScore: number;
   accumulatedRiskLevel: RouteRiskLevel;

@@ -69,7 +69,7 @@ export default function RouteRiskChart({ route }: { route: RouteAnalysis | null 
   const xL = PAD_L;
   const xR = PAD_L + PLOT_W;
 
-  const maxAccum = Math.max(...segments.map((s) => s.accumulatedRiskScore));
+  const maxAccum = Math.max(r0, ...segments.map((s) => s.accumulatedRiskScore));
 
   const metrics: [string, string][] = [
     ["inicio", fmt(r0)],
@@ -140,9 +140,9 @@ export default function RouteRiskChart({ route }: { route: RouteAnalysis | null 
             strokeLinecap="round"
           />
 
-          {/* Per-segment dots — skipped when many segments to keep chart readable */}
+          {/* Euler points, including R(0), skipped when many segments to keep chart readable */}
           {segments.length <= 20 &&
-            pts.slice(1).map((p, i) => (
+            pts.map((p, i) => (
               <circle
                 key={i}
                 cx={p.x}
