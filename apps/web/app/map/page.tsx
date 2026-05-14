@@ -7,5 +7,9 @@ export const metadata: Metadata = {
 };
 
 export default function MapPage() {
-  return <MapLayout />;
+  return (
+    <main className="h-svh w-full overflow-hidden">
+      <MapLayout />
+    </main>
+  );
 }
