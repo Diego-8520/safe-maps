@@ -1,6 +1,6 @@
 # supabase/ — Migration and seed scaffold
 
-Follows Supabase CLI convention. Migration exists as a draft; no Supabase project is linked yet.
+Follows Supabase CLI convention. The initial migration and seeds have been applied to the Safe Maps Supabase project `hzvutucmigtflocalyrg`.
 
 ## Structure
 
@@ -15,11 +15,13 @@ supabase/
 
 | File | Status | Description |
 |------|--------|-------------|
-| `20260514_initial_schema.sql` | DRAFT — not applied | 7 tables, PostGIS, GiST index, RLS templates |
+| `20260514_initial_schema.sql` | Applied | 7 tables, PostGIS, GiST index, RLS templates |
+
+See [docs/database-execution-status.md](../docs/database-execution-status.md) for final remote counts and geometry validation.
 
 ## Seed execution order
 
-After the migration is applied, run seeds **in this exact order**:
+Seeds were applied in this order:
 
 ```
 001_data_sources.sql          — no FK dependencies
@@ -40,13 +42,13 @@ Seed 008 uses PostGIS functions (`ST_Multi`, `ST_SetSRID`, `ST_GeomFromGeoJSON`)
 The migration activates PostGIS via `CREATE EXTENSION IF NOT EXISTS postgis;`.
 Do not apply 008 without the migration.
 
-## To initialize (when ready)
+## To initialize another environment
 
 ```bash
 # Install Supabase CLI
 npm install -g supabase
 
-# Link to a remote project
+# Link to the Safe Maps remote project
 supabase link --project-ref <project-ref>
 
 # Apply migration

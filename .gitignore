@@ -39,3 +39,6 @@ data/raw/*.xls
 
 # local AI tooling
 .claude/
+
+# supabase cli local state
+supabase/.temp/
