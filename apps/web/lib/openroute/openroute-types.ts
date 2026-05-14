@@ -1,3 +1,8 @@
+export interface GeocodedLocation {
+  label: string;
+  coordinates: [number, number]; // [lon, lat]
+}
+
 export interface OrsGeocodeFeature {
   type: "Feature";
   geometry: {

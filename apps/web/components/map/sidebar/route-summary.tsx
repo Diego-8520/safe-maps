@@ -125,11 +125,21 @@ export default function RouteSummary({ route }: { route: RouteAnalysis | null })
             <InfoRow label="Tiempo estimado">
               <span className="text-xs font-mono text-slate-200">{route.estimatedDurationMinutes} min</span>
             </InfoRow>
-            <InfoRow label="Origen">
-              <span className="text-xs font-mono text-slate-300 truncate max-w-35 text-right">{route.originLabel}</span>
+            <InfoRow label="Origen resuelto">
+              <span
+                className="text-xs font-mono text-slate-300 truncate max-w-35 text-right"
+                title={route.originLabel}
+              >
+                {route.originLabel}
+              </span>
             </InfoRow>
-            <InfoRow label="Destino">
-              <span className="text-xs font-mono text-slate-300 truncate max-w-35 text-right">{route.destinationLabel}</span>
+            <InfoRow label="Destino resuelto">
+              <span
+                className="text-xs font-mono text-slate-300 truncate max-w-35 text-right"
+                title={route.destinationLabel}
+              >
+                {route.destinationLabel}
+              </span>
             </InfoRow>
           </div>
         </div>

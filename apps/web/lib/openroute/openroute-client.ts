@@ -1,4 +1,4 @@
-import type { OrsGeocodeResponse, OrsDirectionsResponse } from "./openroute-types";
+import type { GeocodedLocation, OrsGeocodeResponse, OrsDirectionsResponse } from "./openroute-types";
 import {
   OrsApiKeyMissingError,
   OrsGeocodingError,
@@ -30,7 +30,7 @@ function enrichAddress(address: string): string {
   return `${address}, Cali, Colombia`;
 }
 
-export async function geocodeAddress(address: string): Promise<[number, number]> {
+export async function geocodeAddress(address: string): Promise<GeocodedLocation> {
   const apiKey = getApiKey();
   const enriched = enrichAddress(address);
 
@@ -62,7 +62,11 @@ export async function geocodeAddress(address: string): Promise<[number, number]>
     throw new OrsGeocodingError(address);
   }
 
-  return data.features[0].geometry.coordinates;
+  const feature = data.features[0];
+  return {
+    label: feature.properties.label || enriched,
+    coordinates: feature.geometry.coordinates,
+  };
 }
 
 export async function getDrivingRoute(

@@ -52,13 +52,20 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const [originCoords, destinationCoords] = await Promise.all([
+    const [originLocation, destinationLocation] = await Promise.all([
       geocodeAddress(origin.trim()),
       geocodeAddress(destination.trim()),
     ]);
 
-    const orsResponse = await getDrivingRoute(originCoords, destinationCoords);
-    const route = await normalizeOpenRouteResponse(orsResponse, origin.trim(), destination.trim());
+    const orsResponse = await getDrivingRoute(
+      originLocation.coordinates,
+      destinationLocation.coordinates,
+    );
+    const route = await normalizeOpenRouteResponse(
+      orsResponse,
+      originLocation.label,
+      destinationLocation.label,
+    );
 
     return NextResponse.json(route);
   } catch (err) {
