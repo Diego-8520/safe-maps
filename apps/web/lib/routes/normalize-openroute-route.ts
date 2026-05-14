@@ -1,29 +1,10 @@
 import type { RouteAnalysis, RouteSegment, RouteCoordinate } from "@/components/map/routes/route-types";
 import type { OrsDirectionsResponse } from "@/lib/openroute/openroute-types";
+import { segmentByDistance } from "@/lib/routes/route-segmentation";
 
 // Placeholder values until spatial intersection with comunas + risk model is implemented.
 const PLACEHOLDER_RISK_SCORE = 50;
 const PLACEHOLDER_RISK_LEVEL = "medium" as const;
-
-const TARGET_SEGMENTS = 6;
-
-function splitCoordinates(
-  coords: [number, number][],
-  n: number,
-): [number, number][][] {
-  if (coords.length < 2) return [coords];
-  const count = Math.min(n, coords.length - 1);
-  const result: [number, number][][] = [];
-  const step = Math.floor((coords.length - 1) / count);
-
-  for (let i = 0; i < count; i++) {
-    const start = i * step;
-    const end = i === count - 1 ? coords.length - 1 : (i + 1) * step;
-    result.push(coords.slice(start, end + 1));
-  }
-
-  return result;
-}
 
 function toRouteCoordinates(coords: [number, number][]): RouteCoordinate[] {
   return coords.map(([lng, lat]) => ({ lng, lat }));
@@ -35,26 +16,33 @@ export function normalizeOpenRouteResponse(
   destinationLabel: string,
 ): RouteAnalysis {
   const feature = response.features[0];
-  const { geometry, properties } = feature;
-  const allCoords = geometry.coordinates;
-  const { distance, duration } = properties.summary;
 
-  const chunks = splitCoordinates(allCoords, TARGET_SEGMENTS);
+  if (!feature) {
+    throw new Error("OpenRouteService returned an empty route response.");
+  }
 
-  const segments: RouteSegment[] = chunks.map((chunk, index) => {
-    const segmentDistance = Math.round((chunk.length / allCoords.length) * distance);
+  const allCoords = feature.geometry.coordinates;
 
-    return {
-      id: `real-seg-${String(index + 1).padStart(3, "0")}`,
-      coordinates: toRouteCoordinates(chunk),
-      distanceMeters: segmentDistance,
-      communeId: null,
-      localRiskScore: PLACEHOLDER_RISK_SCORE,
-      localRiskLevel: PLACEHOLDER_RISK_LEVEL,
-      accumulatedRiskScore: PLACEHOLDER_RISK_SCORE,
-      accumulatedRiskLevel: PLACEHOLDER_RISK_LEVEL,
-    };
-  });
+  if (allCoords.length < 2) {
+    throw new Error(
+      `OpenRouteService returned a route with only ${allCoords.length} coordinate(s).`,
+    );
+  }
+
+  const { distance, duration } = feature.properties.summary;
+
+  const chunks = segmentByDistance(allCoords);
+
+  const segments: RouteSegment[] = chunks.map((chunk, index) => ({
+    id: `real-seg-${String(index + 1).padStart(3, "0")}`,
+    coordinates: toRouteCoordinates(chunk.coords),
+    distanceMeters: chunk.distanceMeters,
+    communeId: null,
+    localRiskScore: PLACEHOLDER_RISK_SCORE,
+    localRiskLevel: PLACEHOLDER_RISK_LEVEL,
+    accumulatedRiskScore: PLACEHOLDER_RISK_SCORE,
+    accumulatedRiskLevel: PLACEHOLDER_RISK_LEVEL,
+  }));
 
   return {
     id: `real-route-${Date.now()}`,
