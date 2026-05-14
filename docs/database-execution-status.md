@@ -20,7 +20,10 @@ This document records the remote database execution status for the Safe Maps Sup
 | Supabase repository activation | Feature flag: `SAFE_MAPS_DATA_SOURCE=supabase` |
 | Runtime pipeline changed | No |
 | App connected to Supabase | No |
-| RLS policies implemented | Pending |
+| RLS policies implemented | **Yes** (2026-05-14) |
+| RLS enforcement | **SELECT only; all roles** |
+| Publishable key authentication | **Supported** |
+| Secret key fallback | **Supported** |
 
 ## Final Table Counts
 
@@ -89,6 +92,42 @@ public tables matching '_%' = 0
 ```
 
 No staging tables needed deletion.
+
+## Row Level Security (RLS)
+
+**Status:** Active (2026-05-14)  
+**Migration:** `supabase/migrations/20260514200000_enable_rls_read_only.sql`
+
+RLS is now enabled on all production tables:
+
+| Table | RLS | Policy | Access |
+|-------|-----|--------|--------|
+| `data_sources` | ✓ | SELECT all | Public read via PostgREST |
+| `risk_model_versions` | ✓ | SELECT all | Public read via PostgREST |
+| `communes` | ✓ | SELECT all | Public read via PostgREST |
+| `commune_risk_profiles` | ✓ | SELECT all | Public read via PostgREST |
+| `annual_crime_indicators` | ✓ | SELECT all | Public read via PostgREST |
+| `risk_model_coefficients` | ✓ | SELECT all | Public read via PostgREST |
+| `risk_time_windows` | ✓ | SELECT all | Public read via PostgREST |
+| `communes_geojson` | — | Inherited | Public read (inherits from communes) |
+
+**Policy Design:**
+
+- SELECT is permitted to all roles (anon, authenticated, service_role)
+- INSERT, UPDATE, DELETE are blocked by default (no policy = no access)
+- Server-side operations using `service_role` bypass RLS for admin tasks
+- Public reads use `PUBLISHABLE_KEY` (anon role) via PostgREST
+
+**Verification:**
+
+```sql
+-- Check RLS enforcement
+SELECT schemaname, tablename, rowsecurity 
+FROM pg_tables 
+WHERE schemaname = 'public' AND rowsecurity = true;
+
+-- Expected: 7 rows (all tables except communes_geojson view)
+```
 
 ## Notes
 
