@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MethodologyIntro } from "@/components/home/methodology";
 
 // --- Icon components (inline SVG) ---
 
@@ -440,49 +441,7 @@ function FlowSection() {
   return (
     <section id="flow" className="px-6 py-28 bg-[#03070f]">
       <div className="mx-auto max-w-6xl">
-        <div className="mb-14 grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-end">
-          <div>
-            <p className="mb-3 text-[11px] font-mono uppercase tracking-widest text-cyan-400">
-              Metodología
-            </p>
-            <h2 className="mb-5 text-3xl font-bold text-white md:text-4xl">
-              Cómo funciona
-            </h2>
-            <p className="max-w-xl text-sm leading-relaxed text-slate-400">
-              Safe Maps toma una ruta urbana real, la discretiza en segmentos,
-              consulta el riesgo local por comuna y calcula la evolución del
-              riesgo acumulado con una ecuación diferencial aproximada por Euler.
-              El resultado es defendible como modelo académico de exposición
-              relativa, no como predicción criminal.
-            </p>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-2">
-            <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.045] p-5">
-              <p className="mb-2 text-[10px] font-mono uppercase tracking-widest text-amber-300">
-                Ecuación implementada
-              </p>
-              <p className="font-mono text-lg text-white">dR/dx = k(L - R)</p>
-              <p className="mt-3 text-xs leading-relaxed text-slate-400">
-                R es el riesgo acumulado. L es el riesgo local del segmento. En
-                euler-v1, k = 1.
-              </p>
-            </div>
-
-            <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.04] p-5">
-              <p className="mb-2 text-[10px] font-mono uppercase tracking-widest text-emerald-300">
-                Fuente de riesgo local
-              </p>
-              <p className="font-mono text-sm leading-relaxed text-white">
-                risk_score -&gt; localRiskScore -&gt; Euler
-              </p>
-              <p className="mt-3 text-xs leading-relaxed text-slate-400">
-                Supabase entrega perfiles por comuna; el integrador usa
-                directamente risk_score como objetivo local del tramo.
-              </p>
-            </div>
-          </div>
-        </div>
+        <MethodologyIntro />
 
         <PipelineRail />
 
