@@ -88,7 +88,7 @@ Si el punto de origen no cae en una comuna conocida, se usa el fallback neutro `
 
 | Concepto | Descripción |
 |----------|-------------|
-| **Riesgo local** | Puntuación de riesgo de la comuna del segmento (`comunas-risk.json`) |
+| **Riesgo local** | Puntuación de riesgo de la comuna del segmento (desde `getCommuneRiskRepository()`) |
 | **Riesgo acumulado** | Evolución de R calculada por Euler, incorpora el efecto de todos los segmentos previos |
 
 Un segmento de riesgo local alto en el tramo 5 no provoca un salto abrupto en el acumulado: el cambio depende de la longitud del segmento y del estado previo de R.

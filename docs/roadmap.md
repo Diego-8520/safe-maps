@@ -4,29 +4,31 @@ Evolución del proyecto desde sus bases hasta la visión final. Cada fase agrega
 
 ---
 
-## Estado actual (mayo 2026) — Fases 1–4 completadas
+## Estado actual (mayo 2026) — Fases 1–7 completadas
 
-El pipeline de análisis de rutas está operativo de extremo a extremo:
+El pipeline de análisis de rutas está operativo de extremo a extremo con datos desde Supabase:
 
-- Mapa interactivo real (MapLibre GL JS)
+- Mapa interactivo con MapLibre GL JS
 - Rutas reales por calles (OpenRouteService)
 - Geocodificación con labels resueltos
 - Comunas oficiales de Cali (22 comunas, GeoJSON IDESC)
 - Segmentación de ruta por distancia (~400 m, Haversine)
 - Asignación de comuna por segmento (ray-casting)
-- Riesgo local por segmento (comunas-risk.json, simulado)
+- Riesgo local por segmento desde Supabase (`commune_risk_profiles`)
 - Riesgo acumulado por modelo diferencial Euler (Euler v1)
-- Ruta coloreada por nivel de riesgo acumulado
-- Gráfica SVG de evolución de riesgo
-- Panel del modelo diferencial (explicación académica)
-- Panel de segmentos por tramo
-- Modo demo eliminado
+- Ruta coloreada por nivel de riesgo local
+- Puntos de inicio y fin de segmentos en el mapa
+- Gráfica SVG de evolución de riesgo Euler
+- Panel del modelo diferencial (fórmula y tabla de coeficientes)
+- Panel de segmentos paginado (8 por página, navegación ‹ / ›)
+- Selección de comuna con panel lateral actualizado desde estado React
+- Repository Pattern con feature flag `SAFE_MAPS_DATA_SOURCE`
+- Integración completa con Supabase: PostgreSQL + PostGIS + RLS
+- `GET /api/communes/risk` como fuente única de verdad del riesgo
 
 ---
 
 ## Fase 1 — Base visual y mapas ✅
-
-Establecer la infraestructura visual del proyecto.
 
 - Proyecto Next.js con App Router y TypeScript
 - Integración de MapLibre GL JS
@@ -40,8 +42,6 @@ Establecer la infraestructura visual del proyecto.
 
 ## Fase 2 — Rutas reales y geocodificación ✅
 
-Conectar el sistema con rutas reales de calles.
-
 - Integración con OpenRouteService
 - Geocodificación de origen y destino
 - Labels resueltos mostrados en el sidebar
@@ -53,11 +53,9 @@ Conectar el sistema con rutas reales de calles.
 
 ## Fase 3 — Segmentación espacial y riesgo local ✅
 
-Dividir la ruta en tramos y asignar variables de riesgo.
-
 - Segmentación por distancia Haversine (~400 m por tramo)
 - Asignación de communeId por punto medio del segmento (ray-casting)
-- Lookup de variables de riesgo desde comunas-risk.json
+- Lookup de variables de riesgo desde repository
 - Riesgo local por segmento (C, S, V, I, F)
 - Fallback para segmentos fuera de comunas (variables neutras)
 
@@ -65,61 +63,75 @@ Dividir la ruta en tramos y asignar variables de riesgo.
 
 ## Fase 4 — Modelo Euler y visualización matemática ✅
 
-Calcular el riesgo acumulado y mostrarlo visualmente.
-
-- Derivada de riesgo: `f(C, S, V, I, F) = a·C̃ − b·S̃ − d·Ṽ − e·Ĩ + h·F̃`
+- Derivada de riesgo: `dR/dx = a·C̃ − b·S̃ − d·Ṽ − e·Ĩ + h·F̃`
 - Integrador Euler paso a paso por segmento
+- `R(n+1) = clamp(R(n) + k·(localRiskScore − R(n))·Δx_km, 0, 100)`
 - Clamp de R entre 0 y 100
-- Ruta coloreada por nivel de riesgo acumulado (`low / medium / high`)
+- Ruta coloreada por nivel de riesgo local
 - Gráfica SVG de evolución de R (sin librerías externas)
 - Panel explicativo del modelo
 - Panel de segmentos con riesgo local y acumulado
 
 ---
 
-## Fase 5 — Mejoras de UX y geocodificación ⏳ Pendiente
+## Fase 5 — UX: paginación de segmentos y puntos en mapa ✅
 
-Mejorar la experiencia al introducir y resolver direcciones.
+- Panel de segmentos paginado: 8 por página, botones ‹ / ›
+- Contador de rango y páginas
+- Reset automático de página al cambiar la ruta
+- Puntos blancos de inicio y fin de segmento sobre el mapa
+- Borde oscuro sutil en puntos para contraste sobre la ruta
 
-- **Geocoding confidence warning**: mostrar alerta cuando ORS devuelve baja confianza
-- **Selección entre candidatos**: ofrecer los 3 resultados principales de geocodificación
-- **Mensajes de error amigables**: distinguir error de red, dirección no encontrada, ruta no posible
-- **Análisis textual de la ruta**: generar un resumen legible de los tramos de riesgo
+---
+
+## Fase 6 — Repository Pattern y fuente única de verdad ✅
+
+- Interfaces `CommuneRepository` y `CommuneRiskRepository`
+- Implementaciones locales (`LocalCommuneRepository`, `LocalCommuneRiskRepository`)
+- Feature flag `SAFE_MAPS_DATA_SOURCE` en `repository-factory.ts`
+- `GET /api/communes/risk` con `force-dynamic`
+- `loadEnrichedGeojson()` consume `/api/communes/risk`
+- `selectedCommuneId` en estado React; `selectedCommune` derivado via `useMemo`
+- Eliminación de snapshots stale del mapa como fuente de datos del panel lateral
+
+---
+
+## Fase 7 — Supabase + PostGIS ✅
+
+- Proyecto Supabase con PostgreSQL + PostGIS configurado
+- Tablas: `communes`, `commune_risk_profiles`, `risk_model_versions`, `risk_model_coefficients`, `data_sources`, `annual_crime_indicators`, `risk_time_windows`
+- Vista `communes_geojson` con `ST_AsGeoJSON`
+- RLS activo en todas las tablas con políticas de lectura pública
+- `SupabaseCommuneRepository` y `SupabaseCommuneRiskRepository` implementados
+- Migraciones versionadas en `supabase/migrations/`
+- Scripts de seed en `scripts/`
+- Modo `SAFE_MAPS_DATA_SOURCE=supabase` operativo
+
+---
+
+## Fase 8 — Mejoras de UX y geocodificación ⏳ Pendiente
+
+- **Geocoding confidence warning**: alerta cuando ORS devuelve baja confianza
+- **Selección entre candidatos**: ofrecer los 3 mejores resultados de geocodificación
+- **Mensajes de error amigables**: distinguir error de red, dirección no encontrada, ruta imposible
+- **Análisis textual de la ruta**: resumen legible de los tramos de riesgo
 - **Autocompletado de direcciones** (evaluación futura)
 
 ---
 
-## Fase 6 — Datos reales o semirreales ⏳ Pendiente
+## Fase 9 — Datos reales o semirreales ⏳ Pendiente
 
-Reemplazar los datos simulados con indicadores urbanos reales.
-
-- Identificar fuentes abiertas para Cali (Secretaría de Seguridad, datos abiertos municipio)
-- Transformar datos al esquema `comunas-risk.json`
+- Identificar fuentes abiertas para Cali (Secretaría de Seguridad, datos.gov.co)
+- Transformar datos al esquema `commune_risk_profiles` de Supabase
 - Documentar fuente, fecha y método de agregación por variable
 - Auditar sesgos antes de publicar
-- Mantener distinción entre datos directos (crimen) e indicadores indirectos (iluminación, flujo)
+- Marcar perfiles como `data_quality: "real"` en lugar de `"simulated"`
 
 Ver criterios de calidad en [docs/data-sources.md](data-sources.md).
 
 ---
 
-## Fase 7 — Base de datos: Supabase + PostGIS ⏳ Pendiente
-
-Migrar datos estáticos a una base de datos geoespacial.
-
-- Crear proyecto en Supabase
-- Migración de comunas-cali.geojson a tabla PostGIS `communes`
-- Tabla `commune_risk_profiles` con versiones por período
-- Reemplazar ray-casting JS por `ST_Within` en PostGIS
-- Cachear geocoding en base de datos
-- Configurar Row Level Security (RLS)
-- Scripts de seed en `data/seeds/`
-
----
-
-## Fase 8 — Persistencia de análisis ⏳ Pendiente
-
-Guardar y consultar análisis de rutas.
+## Fase 10 — Persistencia de análisis ⏳ Pendiente
 
 - Tabla `route_analyses` con metadatos del análisis
 - Tabla `route_segments` con riesgo por segmento
@@ -129,9 +141,7 @@ Guardar y consultar análisis de rutas.
 
 ---
 
-## Fase 9 — Rutas alternativas ⏳ Pendiente
-
-Comparar múltiples rutas y elegir la de menor riesgo.
+## Fase 11 — Rutas alternativas ⏳ Pendiente
 
 - Solicitar hasta 3 rutas alternativas a ORS
 - Calcular Euler v1 para cada alternativa
@@ -141,12 +151,8 @@ Comparar múltiples rutas y elegir la de menor riesgo.
 
 ---
 
-## Fase 10 — Presentación académica y portafolio ⏳ Pendiente
+## Fase 12 — Presentación académica y portafolio ⏳ Pendiente
 
-Preparar el proyecto para presentación pública.
-
-- README completo con contexto académico
-- Documentación técnica revisada y coherente
 - Demo pública en Vercel con datos simulados
 - Video o presentación explicativa del modelo
 - Análisis de sensibilidad de coeficientes documentado
@@ -155,8 +161,6 @@ Preparar el proyecto para presentación pública.
 ---
 
 ## Prioridades transversales
-
-A lo largo de todas las fases:
 
 - **Precisión**: el modelo debe ser correcto antes de ser sofisticado.
 - **Seguridad**: las claves nunca se exponen al cliente.

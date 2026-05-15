@@ -1,36 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# apps/web — Safe Maps (Next.js)
 
-## Getting Started
+Aplicación principal de Safe Maps. Contiene el frontend React/MapLibre y las API Routes server-side.
 
-First, run the development server:
+---
+
+## Desarrollo local
 
 ```bash
+# Desde la raíz del monorepo:
+npm run dev --workspace=apps/web
+
+# O desde este directorio:
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Abrir `http://localhost:3000/map`
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Variables de entorno
 
-## Learn More
+Crear `apps/web/.env.local` a partir de `.env.example`:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+cp .env.example .env.local
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Variable | Descripción | Requerida |
+|----------|-------------|-----------|
+| `OPENROUTE_API_KEY` | Clave de API de OpenRouteService | Sí |
+| `SAFE_MAPS_DATA_SOURCE` | `local` o `supabase` (default: `local`) | No |
+| `SAFE_MAPS_SUPABASE_URL` | URL del proyecto Supabase | Solo si `=supabase` |
+| `SAFE_MAPS_SUPABASE_PUBLISHABLE_KEY` | Clave anon/pública (RLS activo) | Solo si `=supabase` |
+| `SAFE_MAPS_SUPABASE_SECRET_KEY` | Clave service_role (admin) | Opcional |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+> Ninguna variable lleva prefijo `NEXT_PUBLIC_`. Todas son server-side únicamente.
 
-## Deploy on Vercel
+---
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Scripts
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run dev     # Servidor de desarrollo
+npm run build   # Build de producción
+npm run start   # Servidor de producción
+npm run lint    # ESLint
+```
+
+---
+
+## Endpoints disponibles
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| `POST` | `/api/routes/analyze` | Geocodifica, enruta, segmenta, aplica Euler |
+| `GET` | `/api/communes/risk` | Perfiles de riesgo de las 22 comunas |
+| `GET` | `/api/health/data-source` | Estado y conteo de la fuente de datos activa |
+
+---
+
+## Nota sobre Next.js
+
+Esta aplicación usa **Next.js 16** con **React 19**. Algunas APIs y convenciones difieren de versiones anteriores. Consultar `node_modules/next/dist/docs/` antes de modificar configuración o APIs de Next.js.
+
+Ver documentación completa del proyecto en `/docs/` desde la raíz del repositorio.

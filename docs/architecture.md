@@ -1,14 +1,14 @@
 # Safe Maps — Arquitectura técnica
 
-Descripción de la arquitectura general del sistema: decisiones técnicas, estructura de carpetas, flujo de datos y evolución esperada.
+Descripción de la arquitectura del sistema: decisiones técnicas, estructura de carpetas, flujo de datos y separación de responsabilidades.
 
 ---
 
 ## Visión general
 
-Safe Maps es un monorepo con un frontend Next.js que actúa también como capa de API (API Routes). El sistema consulta OpenRouteService para obtener geometría real de rutas, procesa los segmentos espacialmente y aplica el modelo de riesgo Euler antes de enviar la respuesta al cliente.
+Safe Maps es un monorepo con un frontend Next.js que actúa también como capa de API (API Routes). El sistema consulta OpenRouteService para obtener geometría real de rutas, procesa los segmentos espacialmente, aplica el modelo de riesgo Euler y devuelve un `RouteAnalysis` completo al cliente.
 
-En fases futuras, la lógica de persistencia y los joins espaciales se moverán a una base de datos PostgreSQL con PostGIS (Supabase).
+Los perfiles de riesgo por comuna se sirven desde Supabase (PostgreSQL + PostGIS) cuando `SAFE_MAPS_DATA_SOURCE=supabase`, o desde archivos JSON locales si la variable no está configurada. El acceso está abstraído mediante el Repository Pattern; el pipeline de análisis no cambia con el cambio de fuente.
 
 ---
 
@@ -16,16 +16,11 @@ En fases futuras, la lógica de persistencia y los joins espaciales se moverán 
 
 ```
 safe-maps/
-├── apps/
-│   ├── web/                  ← Aplicación Next.js principal (actual)
-│   └── api/                  ← API dedicada (fase futura, opcional)
-│
-├── data/
-│   ├── raw/                  ← Datos originales sin procesar
-│   ├── processed/            ← Datos transformados y listos para uso
-│   └── seeds/                ← Scripts de seed para base de datos
-│
-├── docs/                     ← Documentación del proyecto
+├── apps/web/                 ← Aplicación Next.js (frontend + API Routes)
+├── supabase/
+│   └── migrations/           ← Migraciones SQL de Supabase
+├── scripts/                  ← Preparación y validación de seeds de DB
+├── docs/                     ← Documentación técnica
 └── README.md
 ```
 
@@ -36,38 +31,28 @@ safe-maps/
 ```
 Browser
   │
-  ├── MapLibre GL JS (renderizado de mapa)
+  ├── MapLibre GL JS (renderizado de mapa, capas, popups)
   │
-  └── Next.js App Router (cliente)
+  └── Next.js App Router (cliente React)
          │
-         └── POST /api/routes/analyze   ← Next.js API Route (server-side)
-                │
-                ├── OpenRouteService (geocoding + routing)
-                ├── comunas-cali.geojson (local, en memoria)
-                ├── comunas-risk.json   (local, en memoria)
-                └── Módulos lib/ (geo, risk, routes)
-```
-
-Todo el procesamiento ocurre **server-side**. El cliente recibe un `RouteAnalysis` ya calculado.
-
----
-
-## Arquitectura objetivo (fase futura)
-
-```
-Browser
-  │
-  └── Next.js App Router (cliente)
+         ├── GET /api/communes/risk        ← carga GeoJSON enriquecido al inicio
+         │        │
+         │        └── getCommuneRiskRepository().getAll()
+         │                 │
+         │                 ├── local: comunas-risk.json
+         │                 └── supabase: commune_risk_profiles (PostgREST)
          │
-         └── POST /api/routes/analyze
-                │
-                ├── OpenRouteService (geocoding + routing)
-                ├── Supabase / PostGIS (join espacial, comunas)
-                ├── Supabase / PostgreSQL (perfiles de riesgo)
-                └── Módulos lib/ (Euler, normalización)
+         ├── POST /api/routes/analyze      ← análisis de ruta bajo demanda
+         │        │
+         │        ├── OpenRouteService (geocoding + routing)
+         │        ├── getCommuneRepository().getFeatures()   ← ray-casting
+         │        ├── getCommuneRiskRepository().getAll()    ← riesgo local
+         │        └── Módulos lib/ (geo, risk/Euler, routes)
+         │
+         └── GET /api/health/data-source   ← diagnóstico de fuente activa
 ```
 
-La geometría de comunas y los perfiles de riesgo se consultarán desde la base de datos en lugar de archivos estáticos locales.
+Todo el procesamiento de riesgo ocurre **server-side**. El cliente recibe un `RouteAnalysis` ya calculado. La clave `OPENROUTE_API_KEY` y las credenciales de Supabase nunca salen del servidor.
 
 ---
 
@@ -77,46 +62,67 @@ La geometría de comunas y los perfiles de riesgo se consultarán desde la base 
 apps/web/
 ├── app/
 │   ├── api/
-│   │   └── routes/
-│   │       └── analyze/
-│   │           └── route.ts          ← POST handler principal
+│   │   ├── communes/risk/route.ts          ← GET /api/communes/risk
+│   │   ├── health/data-source/route.ts     ← GET /api/health/data-source
+│   │   └── routes/analyze/route.ts         ← POST /api/routes/analyze
 │   └── map/
-│       └── page.tsx                  ← Ruta /map
+│       └── page.tsx                        ← Ruta /map
 │
-├── components/
-│   └── map/
-│       ├── map-layout.tsx            ← Estado central + orquestación
-│       ├── map-libre-view.tsx        ← Renderizado MapLibre
-│       ├── routes/                   ← Tipos, proveedor, utilidades
-│       ├── sidebar/                  ← Componentes del panel lateral
-│       └── ui/                       ← Íconos y utilidades visuales
+├── components/map/
+│   ├── map-layout.tsx                      ← Estado global: communesGeojson, selectedCommuneId, route
+│   ├── map-libre-view.tsx                  ← Renderizado MapLibre (capas reactivas a props)
+│   ├── data/load-communes.ts               ← loadEnrichedGeojson() → GET /api/communes/risk
+│   ├── routes/                             ← route-types, route-utils, providers, services
+│   ├── sidebar/                            ← RouteSummary, RouteRiskChart, RouteSegmentsPanel, EulerModelPanel
+│   ├── popups/                             ← buildCommunePopupHtml, buildRouteSegmentPopupHtml
+│   ├── analysis/                           ← Paneles de análisis de ruta
+│   ├── mobile/                             ← MobileMapControls, MobileBottomSheet
+│   └── ui/                                 ← Componentes visuales genéricos
 │
 ├── lib/
-│   ├── openroute/                    ← Cliente ORS, tipos, errores
-│   ├── routes/                       ← Normalización y segmentación
-│   ├── geo/                          ← Commune lookup, ray-casting
-│   └── risk/                         ← Modelo Euler, derivada, umbrales
+│   ├── repositories/                       ← Interfaces + implementaciones local y supabase
+│   ├── openroute/                          ← Cliente ORS, tipos, errores
+│   ├── routes/                             ← Normalización de respuesta ORS, segmentación Haversine
+│   ├── geo/                                ← Commune lookup (ray-casting), tipos GeoJSON
+│   ├── risk/                               ← Modelo Euler, derivada, umbrales, config del modelo
+│   ├── supabase/                           ← Cliente PostgREST, config, tipos generados
+│   └── types/                              ← Tipos compartidos (CommuneRisk, modelos, tiempo)
 │
-└── public/
-    └── data/
-        ├── comunas-cali.geojson      ← Geometría oficial
-        └── comunas-risk.json         ← Dataset de riesgo (simulado)
+└── public/data/
+    ├── comunas-cali.geojson                ← Geometría oficial de comunas (IDESC)
+    └── comunas-risk.json                   ← Perfiles de riesgo locales (simulados, fallback)
 ```
+
+---
+
+## Endpoints de API
+
+| Método | Ruta | Responsabilidad |
+|--------|------|----------------|
+| `POST` | `/api/routes/analyze` | Geocodifica, enruta, segmenta, aplica Euler |
+| `GET` | `/api/communes/risk` | Devuelve `CommuneRisk[]` desde el repository activo |
+| `GET` | `/api/health/data-source` | Estado y conteo de la fuente de datos activa |
+
+`GET /api/communes/risk` usa `force-dynamic` para no cachear; devuelve siempre datos frescos desde el repository.
 
 ---
 
 ## Flujo de datos de alto nivel
 
 ```
-1. Usuario ingresa origen y destino
-2. Frontend llama analyzeRoute()
-3. API Route recibe POST con { origin, destination }
-4. geocodeAddress() → coordenadas + label resuelto (ORS)
-5. getDrivingRoute() → polilínea real por calles (ORS)
-6. normalizeOpenRouteResponse() → segmentación + commune lookup + riesgo local
-7. calculateEulerAccumulatedRouteRisk() → riesgo acumulado por segmento
-8. API devuelve RouteAnalysis
-9. Frontend renderiza mapa, gráfica y paneles
+1. MapLayout monta → GET /api/communes/risk → communesGeojson (estado React)
+2. MapLibreView recibe communesGeojson como prop → actualiza fuente MapLibre
+3. Usuario hace clic en comuna → selectedCommuneId → selectedCommune derivado via useMemo(communesGeojson)
+4. Usuario ingresa origen y destino → analyzeRoute()
+5. POST /api/routes/analyze:
+   a. geocodeAddress(origin, destination)         → coordenadas + labels
+   b. getDrivingRoute(origin, dest)               → polilínea real (ORS)
+   c. segmentByDistance(coords)                   → tramos ~400 m
+   d. findCommuneForPoint(midpoint, features)     → communeId
+   e. findRiskByCommune(communeId)                → riesgo local desde repository
+   f. calculateEulerAccumulatedRouteRisk(route)   → riesgo acumulado
+6. API devuelve RouteAnalysis → route (estado React)
+7. Frontend renderiza mapa, puntos de segmento, gráfica, paneles
 ```
 
 Ver detalle paso a paso en [docs/route-risk-pipeline.md](route-risk-pipeline.md).
@@ -127,67 +133,62 @@ Ver detalle paso a paso en [docs/route-risk-pipeline.md](route-risk-pipeline.md)
 
 | Capa | Responsabilidad |
 |------|----------------|
-| `components/map/map-layout.tsx` | Estado global del análisis, dispara `analyzeRoute` |
-| `components/map/map-libre-view.tsx` | Renderizado de mapa y capa de ruta coloreada |
-| `components/map/sidebar/` | Paneles de resultados (resumen, gráfica, segmentos, modelo) |
-| `app/api/routes/analyze/route.ts` | Validación, orquestación server-side |
+| `components/map/map-layout.tsx` | Estado global del análisis (communesGeojson, selectedCommuneId, route) |
+| `components/map/map-libre-view.tsx` | Renderizado de mapa; capas reactivas a props; click y hover handlers |
+| `components/map/data/load-communes.ts` | `loadEnrichedGeojson()`: combina GeoJSON + riesgo en un FeatureCollection |
+| `components/map/sidebar/` | Paneles de resultados (resumen, gráfica, segmentos paginados, modelo) |
+| `app/api/routes/analyze/route.ts` | Validación, orquestación server-side de análisis de ruta |
+| `app/api/communes/risk/route.ts` | Fuente única de verdad del riesgo por comuna |
+| `lib/repositories/` | Abstracción de fuente de datos; local o Supabase según feature flag |
 | `lib/openroute/` | Comunicación con ORS (geocodificación, ruteo) |
 | `lib/routes/` | Normalización de respuesta ORS, segmentación Haversine |
 | `lib/geo/` | Asignación de comuna por punto (ray-casting) |
-| `lib/risk/` | Derivada de riesgo, integrador Euler, umbrales |
-| `public/data/` | Datos estáticos locales (GeoJSON, JSON de riesgo) |
+| `lib/risk/` | Derivada de riesgo, integrador Euler, umbrales, config del modelo |
+| `public/data/` | Datos estáticos locales (fallback cuando `SAFE_MAPS_DATA_SOURCE=local`) |
 
 ---
 
 ## Decisiones técnicas
 
 ### ¿Por qué Next.js?
-Permite tener frontend y API en el mismo proyecto sin necesidad de un backend separado en esta fase. Las API Routes mantienen las claves server-side.
+Permite tener frontend y API en el mismo proyecto sin necesidad de un backend separado. Las API Routes mantienen las claves server-side. El App Router facilita la separación entre Server Components y Client Components.
 
 ### ¿Por qué MapLibre GL JS?
-Es open source, compatible con fuentes de tiles libres y soporta GeoJSON nativo. No requiere licencia de Mapbox.
+Open source, compatible con fuentes de tiles libres y soporta GeoJSON nativo. No requiere licencia de Mapbox. Soporta capas reactivas mediante `setData()` sin reinicializar el mapa.
 
 ### ¿Por qué OpenRouteService?
-Provee geometría real de calles con API gratuita. Soporta geocodificación y múltiples perfiles de transporte. Compatible con Colombia.
+Provee geometría real de calles con API gratuita. Soporta geocodificación con sesgo geográfico (`focus.point`). Compatible con Colombia.
+
+### ¿Por qué el Repository Pattern?
+El pipeline de análisis (`normalize-openroute-route.ts`) declara qué necesita (`getFeatures()`, `getAll()`) sin saber de dónde vienen los datos. Cambiar de JSON local a Supabase no requiere modificar el pipeline.
 
 ### ¿Por qué Euler está aislado en `lib/risk/`?
-Permite reemplazar o extender el modelo sin tocar el pipeline de normalización. La derivada `f(C,S,V,I,F)` y el integrador son funciones puras.
+Permite reemplazar o extender el modelo sin tocar el pipeline de normalización. La fórmula de derivada y el integrador son funciones puras sin efectos laterales.
 
-### ¿Por qué PostGIS en fase futura?
-El join espacial actual (ray-casting JS) es correcto para el volumen actual. PostGIS permitirá escalar, cachear resultados y hacer queries geoespaciales eficientes cuando el dataset crezca.
+### ¿Por qué `selectedCommuneId` en lugar de `selectedCommune` en el estado?
+Al guardar solo el ID en React, `selectedCommune` se deriva via `useMemo` desde `communesGeojson` (la fuente de verdad actual). Esto garantiza que el panel lateral, el popup y la capa del mapa siempre muestren el mismo valor de riesgo para cada comuna, sin snapshots stale.
+
+### ¿Por qué `GET /api/communes/risk` con `force-dynamic`?
+Para que el riesgo siempre provenga del repository activo (local o Supabase), sin que Next.js cachée la respuesta entre requests. Esto garantiza consistencia entre todos los consumidores del dato de riesgo.
 
 ---
 
 ## Seguridad
 
-- `OPENROUTE_API_KEY` vive en variables de entorno server-side únicamente.
+- `OPENROUTE_API_KEY` y las claves de Supabase son solo server-side.
 - No se usa `NEXT_PUBLIC_*` para claves de API externas.
-- El cliente nunca recibe la clave; la API Route actúa como proxy.
-- En fase futura, Supabase usará Row Level Security (RLS) para proteger datos persistidos.
-
----
-
-## Preparación de la capa de acceso a datos
-
-El acceso a los archivos de datos locales está ahora abstraído detrás de interfaces de repository:
-
-- `CommuneRepository` — provee geometría de comunas como `CommuneFeature[]`
-- `CommuneRiskRepository` — provee perfiles de riesgo como `CommuneRisk[]`
-
-Las implementaciones actuales (`localCommuneRepository`, `localCommuneRiskRepository`) delegan a los loaders existentes. El pipeline principal (`normalize-openroute-route.ts`) importa únicamente los singletons de repository — no los loaders directamente.
-
-Para migrar a Supabase: crear `SupabaseCommuneRepository` y `SupabaseCommuneRiskRepository` implementando las mismas interfaces, y sustituir los singletons. El pipeline no cambia.
-
-Ver detalle en [docs/repositories.md](repositories.md) y [docs/data-architecture.md](data-architecture.md).
+- El cliente nunca recibe las claves; las API Routes actúan como proxies.
+- RLS activo en Supabase: el acceso de lectura pública usa la clave publicable; la clave service_role solo se usa en operaciones administrativas.
+- Los componentes de UI no importan Supabase directamente.
 
 ---
 
 ## Limitaciones actuales de arquitectura
 
-| Limitación | Impacto | Solución futura |
-|-----------|---------|----------------|
-| GeoJSON en memoria (archivos locales) | No escala a datasets grandes | Migrar a PostGIS |
-| Sin persistencia | Los análisis no se guardan | Supabase + tablas de análisis |
-| Join espacial en JS (ray-casting) | Correcto pero no optimizado | PostGIS ST_Within |
-| Sin caché de geocoding | Llamadas redundantes a ORS | Cache server-side o DB |
-| Un solo proveedor de rutas | Sin fallback si ORS falla | Diseñar abstracción de proveedor |
+| Limitación | Impacto | Estado |
+|-----------|---------|--------|
+| Join espacial en JS (ray-casting) | Correcto, no optimizado para >100 comunas | Activo; PostGIS ST_Within preparado como estrategia alternativa |
+| Sin persistencia de análisis | Los análisis no se guardan | Pendiente (Fase 8) |
+| Sin caché de geocoding | Llamadas redundantes a ORS para las mismas direcciones | Pendiente |
+| Un solo proveedor de rutas | Sin fallback si ORS falla | Pendiente |
+| Sin autocompletado de direcciones | El usuario ingresa texto libre | Pendiente (Fase 5) |

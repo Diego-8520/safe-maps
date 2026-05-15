@@ -1,14 +1,12 @@
 # Safe Maps — Repository Pattern
 
-Describe las interfaces de repositorio, sus implementaciones locales actuales y las reglas de uso en el pipeline.
+Describe las interfaces de repositorio, sus implementaciones (local y Supabase), el factory, y las reglas de importación.
 
 ---
 
 ## Propósito
 
-Los repositories abstraen el acceso a datos del pipeline de análisis de rutas. El pipeline declara qué necesita mediante una interfaz; la implementación concreta decide de dónde obtenerlo.
-
-Esto permite reemplazar los archivos locales por Supabase sin modificar el pipeline.
+Los repositories abstraen el acceso a datos del pipeline de análisis de rutas. El pipeline declara qué necesita mediante una interfaz; la implementación concreta decide de dónde obtenerlo (archivo local o Supabase). Esto permite cambiar la fuente de datos sin modificar el pipeline.
 
 ---
 
@@ -25,7 +23,7 @@ export interface CommuneRepository {
 }
 ```
 
-**Contrato:** devuelve todos los features GeoJSON de comunas disponibles. No impone ninguna fuente (archivo, DB, API).
+**Contrato:** devuelve todos los features GeoJSON de las 22 comunas de Cali. No impone ninguna fuente.
 
 ---
 
@@ -44,9 +42,28 @@ export interface CommuneRiskRepository {
 
 ---
 
+## Factory
+
+```typescript
+// lib/repositories/repository-factory.ts
+export function getCommuneRepository(): CommuneRepository
+export function getCommuneRiskRepository(): CommuneRiskRepository
+```
+
+**Lógica de selección:** basada en `SAFE_MAPS_DATA_SOURCE` (variable de entorno server-side):
+
+| Valor | Repository devuelto |
+|-------|-------------------|
+| `"supabase"` | `SupabaseCommuneRepository` / `SupabaseCommuneRiskRepository` |
+| cualquier otro (incluyendo ausente) | `localCommuneRepository` / `localCommuneRiskRepository` |
+
+El factory se evalúa en runtime, no en compilación.
+
+---
+
 ## Implementaciones locales
 
-### `localCommuneRepository`
+### `LocalCommuneRepository`
 
 ```typescript
 // lib/repositories/local-commune-repository.ts
@@ -57,7 +74,7 @@ export interface CommuneRiskRepository {
 - Lee `public/data/comunas-cali.geojson`
 - Exporta un singleton tipado como `CommuneRepository`
 
-### `localCommuneRiskRepository`
+### `LocalCommuneRiskRepository`
 
 ```typescript
 // lib/repositories/local-commune-risk-repository.ts
@@ -68,81 +85,72 @@ export interface CommuneRiskRepository {
 - Lee `public/data/comunas-risk.json`
 - Exporta un singleton tipado como `CommuneRiskRepository`
 
-Los singletons se tipan con la interfaz (no con la clase concreta) para que la sustitución futura no requiera cambiar el código de consumo.
+---
+
+## Implementaciones Supabase
+
+### `SupabaseCommuneRepository`
+
+```typescript
+// lib/repositories/supabase-commune-repository.ts
+```
+
+- Implementa `CommuneRepository`
+- Consulta la vista `communes_geojson` vía PostgREST
+- Selecciona: `zona_id`, `comuna_numero`, `name`, `geometry_geojson`
+- Parsea `geometry_geojson` (JSON string) y construye `CommuneFeature[]`
+- Usa `geometry_geojson` (producida por `ST_AsGeoJSON`) en lugar de `communes.geometry` directamente, para evitar dependencia de la serialización PostGIS
+- Ordena por `comuna_numero.asc`
+
+### `SupabaseCommuneRiskRepository`
+
+```typescript
+// lib/repositories/supabase-commune-risk-repository.ts
+```
+
+- Implementa `CommuneRiskRepository`
+- Consulta `commune_risk_profiles` con JOIN a `communes` por FK
+- Selecciona: `criminalidad`, `seguridad`, `vigilancia`, `iluminacion`, `flujo_personas`, `risk_score`, `risk_level`
+- Mapea columnas snake_case de Postgres a camelCase del tipo `CommuneRisk`
+- Ordena por `communes.comuna_numero.asc`
 
 ---
 
-## Responsabilidades
+## Responsabilidades de los repositories
 
 | Repository | Responsabilidad |
 |-----------|----------------|
 | `CommuneRepository` | Proveer geometría de comunas como `CommuneFeature[]` |
 | `CommuneRiskRepository` | Proveer perfiles de riesgo como `CommuneRisk[]` |
 
----
-
-## Qué NO deben hacer los repositories
-
-- No ejecutan lógica de negocio (sin Euler, sin cálculos de riesgo).
-- No transforman datos más allá del parseo del formato de origen.
-- No llaman a otros repositories entre sí.
-- No dependen de React, Next.js, MapLibre ni ningún framework de UI.
-- No exponen tipos internos del loader o de la fuente de datos.
-- No tienen estado de sesión de usuario.
-
----
-
-## Migración a Supabase
-
-Para reemplazar la implementación local por Supabase:
-
-1. Crear `SupabaseCommuneRepository implements CommuneRepository`:
-   ```typescript
-   // lib/repositories/supabase-commune-repository.ts
-   class SupabaseCommuneRepository implements CommuneRepository {
-     async getFeatures(): Promise<CommuneFeature[]> {
-       // SELECT id, ST_AsGeoJSON(geometry) FROM communes
-       // Construir CommuneFeature[] desde filas de DB
-     }
-   }
-   ```
-
-2. Crear `SupabaseCommuneRiskRepository implements CommuneRiskRepository`:
-   ```typescript
-   // lib/repositories/supabase-commune-risk-repository.ts
-   class SupabaseCommuneRiskRepository implements CommuneRiskRepository {
-     async getAll(): Promise<CommuneRisk[]> {
-       // SELECT * FROM commune_risk_profiles
-     }
-   }
-   ```
-
-3. En `local-commune-repository.ts` y `local-commune-risk-repository.ts`, sustituir el singleton exportado:
-   ```typescript
-   // Antes:
-   export const localCommuneRepository: CommuneRepository = new LocalCommuneRepository();
-   // Después:
-   export const localCommuneRepository: CommuneRepository = new SupabaseCommuneRepository();
-   ```
-
-El pipeline (`normalize-openroute-route.ts`) no cambia.
+**Qué NO deben hacer los repositories:**
+- No ejecutan lógica de negocio (sin Euler, sin cálculos de riesgo)
+- No transforman datos más allá del parseo del formato de origen
+- No llaman a otros repositories entre sí
+- No dependen de React, Next.js, MapLibre ni ningún framework de UI
+- No exponen tipos internos del loader o de la fuente de datos
+- No tienen estado de sesión de usuario
 
 ---
 
 ## Reglas de importación
 
 ```
-pipeline (lib/routes/, app/api/)
-    │  puede importar
-    ▼
-lib/repositories/  (interfaces y singletons)
-    │  puede importar
-    ▼
-lib/geo/load-communes-geojson.ts
-lib/risk/load-communes-risk.ts
-    │  puede importar
-    ▼
-node:fs, node:path  (solo server-side)
+app/api/ y lib/routes/              ← pipeline de análisis (puede importar)
+         │
+         ▼
+lib/repositories/                   ← interfaces y factory (puede importar)
+         │
+         ├── local-commune-repository.ts
+         │         │  puede importar
+         │         ▼
+         │   lib/geo/load-communes-geojson.ts
+         │   lib/risk/load-communes-risk.ts
+         │
+         └── supabase-commune-repository.ts
+                   │  puede importar
+                   ▼
+             lib/supabase/server.ts  ← solo server-side
 ```
 
 **Restricciones explícitas:**
@@ -153,6 +161,7 @@ node:fs, node:path  (solo server-side)
 | `components/` | No importa loaders ni repositories |
 | `repositories/` | No importa desde `components/` |
 | `loaders` | No importan desde `repositories/` (dependencia circular) |
+| `supabase/server.ts` | No se instancia en componentes de cliente |
 
 ---
 
@@ -160,13 +169,17 @@ node:fs, node:path  (solo server-side)
 
 | Archivo | Rol |
 |--------|-----|
+| `lib/repositories/repository-factory.ts` | Factory; selecciona implementación según feature flag |
 | `lib/repositories/commune-repository.ts` | Interfaz `CommuneRepository` |
 | `lib/repositories/commune-risk-repository.ts` | Interfaz `CommuneRiskRepository` |
 | `lib/repositories/local-commune-repository.ts` | Implementación local + singleton |
 | `lib/repositories/local-commune-risk-repository.ts` | Implementación local + singleton |
-| `lib/geo/load-communes-geojson.ts` | Loader con caché para GeoJSON |
-| `lib/risk/load-communes-risk.ts` | Loader con caché para perfiles de riesgo |
+| `lib/repositories/supabase-commune-repository.ts` | Implementación Supabase para geometría |
+| `lib/repositories/supabase-commune-risk-repository.ts` | Implementación Supabase para riesgo |
+| `lib/geo/load-communes-geojson.ts` | Loader con caché para GeoJSON local |
+| `lib/risk/load-communes-risk.ts` | Loader con caché para JSON de riesgo local |
 | `lib/types/commune-risk.ts` | Tipo canónico `CommuneRisk` |
 | `lib/geo/geojson-types.ts` | Tipos canónicos GeoJSON (`CommuneFeature`, etc.) |
 
-Ver contexto de migración en [docs/data-architecture.md](data-architecture.md).
+Ver flujo completo en [docs/data-architecture.md](data-architecture.md).
+Ver configuración de Supabase en [docs/supabase-repositories.md](supabase-repositories.md).

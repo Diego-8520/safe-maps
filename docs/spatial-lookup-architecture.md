@@ -1,58 +1,41 @@
 # Safe Maps — Arquitectura de búsqueda espacial de comunas
 
-Describe el problema actual, las limitaciones del ray-casting, los beneficios de PostGIS, y la estrategia de reemplazo sin romper el pipeline.
+Describe la estrategia actual de asignación de communes por punto, sus limitaciones y la estrategia futura con PostGIS ST_Within.
 
 ---
 
-## Problema actual
+## Problema
 
 El pipeline de análisis de rutas necesita asignar cada segmento a una comuna. Para hacerlo, determina qué polígono de las 22 comunas de Cali contiene el punto central del segmento.
 
-La implementación actual hace esto con un algoritmo de ray-casting en memoria:
+---
+
+## Estrategia activa: Ray-casting en memoria
+
+**Implementación:** `lib/geo/spatial/ray-casting-commune-lookup.ts`
 
 ```
 Para cada segmento:
   midpoint = punto central del segmento
-  Para cada feature en CommuneFeature[]:
+  Para cada CommuneFeature:
     ¿midpoint está dentro del polígono de este feature?
     Sí → retornar communeId
   Ninguno → retornar null
 ```
 
-El resultado es correcto pero el acoplamiento era directo: `normalize-openroute-route.ts` llamaba a `findCommuneForPoint(midpoint, features)` como función pura sin abstracción de estrategia.
-
----
-
-## Limitaciones del ray-casting
-
-| Limitación | Detalle |
-|-----------|---------|
-| Complejidad lineal | O(features × vértices) por segmento. Con 22 comunas y polígonos simples: aceptable. Con 1000+ comunas: inaceptable. |
-| Sin índice espacial | Escanea todos los features en orden. No hay estructura de búsqueda espacial. |
-| Memoria de proceso | El GeoJSON completo vive en RAM. Escala mal si el dataset crece (ej. 5000 polígonos). |
-| Lógica duplicada | `extractCommuneId` y `isPointInFeature` vivían en `find-commune-for-point.ts` sin encapsular. |
-| Acoplamiento a archivos locales | El pipeline recibía un `CommuneFeature[]` cargado del GeoJSON. PostGIS no necesita ese array. |
-
----
-
-## Abstracción introducida: SpatialCommuneLookupStrategy
+El algoritmo de ray-casting está encapsulado en `RayCastingCommuneLookupStrategy`, que implementa la interfaz `SpatialCommuneLookupStrategy`. La función pública `findCommuneForPoint()` actúa como façade de una línea:
 
 ```typescript
-// lib/geo/spatial/spatial-commune-lookup-strategy.ts
-interface SpatialCommuneLookupStrategy {
-  findCommuneId(point: GeoJsonPosition, features: CommuneFeature[]): number | null;
+// lib/geo/find-commune-for-point.ts
+export function findCommuneForPoint(
+  point: GeoJsonPosition,
+  features: CommuneFeature[],
+): number | null {
+  return rayCastingCommuneLookup.findCommuneId(point, features);
 }
 ```
 
-`find-commune-for-point.ts` es ahora una façade de una línea sobre `rayCastingCommuneLookup`. El pipeline no sabe qué estrategia está activa.
-
-```
-normalize-openroute-route.ts
-  → findCommuneForPoint(midpoint, features)      ← misma firma, mismo comportamiento
-      → rayCastingCommuneLookup.findCommuneId()  ← delega a la estrategia
-          → RayCastingCommuneLookupStrategy       ← encapsula ray-casting + extractCommuneId
-              → pointInPolygon()                  ← algoritmo puro, sin cambios
-```
+El pipeline recibe `features` desde `getCommuneRepository().getFeatures()` y las pasa a `findCommuneForPoint()`.
 
 ---
 
@@ -60,19 +43,34 @@ normalize-openroute-route.ts
 
 | Estrategia | Archivo | Estado |
 |-----------|---------|--------|
-| `RayCastingCommuneLookupStrategy` | `spatial/ray-casting-commune-lookup.ts` | Activa |
-| `PostGISCommuneLookupStrategy` | `spatial/postgis-commune-lookup.ts` | Placeholder (throws) |
+| `RayCastingCommuneLookupStrategy` | `spatial/ray-casting-commune-lookup.ts` | **Activa** |
+| `PostGISCommuneLookupStrategy` | `spatial/postgis-commune-lookup.ts` | Placeholder (throws en runtime) |
 
 ---
 
-## Beneficios de PostGIS (fase futura)
+## Limitaciones del ray-casting
+
+| Limitación | Detalle |
+|-----------|---------|
+| Complejidad lineal | O(features × vértices) por segmento. Con 22 comunas: aceptable. Con 1000+ comunas: inaceptable. |
+| Sin índice espacial | Escanea todos los features en orden. |
+| Memoria de proceso | El GeoJSON completo vive en RAM. |
+| Solo sync | No puede hacer round-trips a DB de forma natural. |
+
+Para el volumen actual (22 comunas, polígonos simples), el ray-casting es correcto y la latencia es <1 ms.
+
+---
+
+## Estrategia futura: PostGIS ST_Within
+
+Cuando se active `PostGISCommuneLookupStrategy`, la query sería:
 
 ```sql
-SELECT id
-FROM communes
+SELECT c.comuna_numero
+FROM communes c
 WHERE ST_Within(
   ST_SetSRID(ST_MakePoint($lng, $lat), 4326),
-  geometry
+  c.geometry
 )
 LIMIT 1;
 ```
@@ -80,26 +78,44 @@ LIMIT 1;
 | Aspecto | Ray-casting JS | PostGIS ST_Within |
 |---------|---------------|------------------|
 | Complejidad | O(features × vértices) | O(log n) con GIST index |
-| Índice espacial | No | Sí (GIST) |
+| Índice espacial | No | Sí (GIST en `communes.geometry`) |
 | Soporte de geometría | Polygon, MultiPolygon | Todos los tipos OGC |
-| Precisión | Buena (WGS84 planar) | Alta (geodésica) |
+| Latencia | <1 ms (in-memory) | ~1–5 ms (round-trip DB local) |
 | Escalabilidad | Limitada por RAM | Escalable |
-| Latencia | < 1ms (in-memory) | ~1–5ms (round-trip DB local) |
 | Mantenimiento de datos | GeoJSON en `public/data/` | Tabla `communes` en Supabase |
 
 ---
 
-## Estrategia de reemplazo sin romper el pipeline
+## Estado de la tabla `communes` en Supabase
+
+| Requisito | Estado |
+|-----------|--------|
+| Tabla `communes` creada | ✅ Completo |
+| Índice GIST en `communes.geometry` | ✅ Completo |
+| Geometría cargada (seed) | ✅ Completo |
+| Vista `communes_geojson` para PostgREST | ✅ Completo |
+| `SupabaseCommuneRepository` implementado | ✅ Completo |
+| Interfaz `SpatialCommuneLookupStrategy` abstracta | ✅ Completo |
+| `RayCastingCommuneLookupStrategy` encapsulado | ✅ Completo |
+| `PostGISCommuneLookupStrategy` placeholder | ✅ Creado (throws en runtime) |
+| Migración de interfaz a async | ⏳ Pendiente |
+| `PostGISCommuneLookupStrategy` funcional | ⏳ Pendiente |
+
+---
+
+## Plan de migración a PostGIS
+
+Para activar la estrategia PostGIS sin romper el pipeline:
 
 ### Paso 1 — Actualizar la interfaz a async
 
 ```typescript
-// Antes (actual):
+// Antes (actual, sync):
 interface SpatialCommuneLookupStrategy {
   findCommuneId(point: GeoJsonPosition, features: CommuneFeature[]): number | null;
 }
 
-// Después (PostGIS):
+// Después (PostGIS, async):
 interface SpatialCommuneLookupStrategy {
   findCommuneId(point: GeoJsonPosition): Promise<number | null>;
 }
@@ -120,13 +136,6 @@ export async function findCommuneForPoint(
 
 ```typescript
 // normalize-openroute-route.ts
-// Antes:
-const rawSegments = chunks.map((chunk, index) => {
-  const communeId = findCommuneForPoint(midpoint, features);
-  ...
-});
-
-// Después:
 const rawSegments = await Promise.all(
   chunks.map(async (chunk, index) => {
     const communeId = await findCommuneForPoint(midpoint);
@@ -137,7 +146,7 @@ const rawSegments = await Promise.all(
 
 ### Paso 4 — Eliminar features del pipeline
 
-Cuando PostGIS gestiona el lookup, el pipeline ya no necesita cargar el GeoJSON de comunas. `localCommuneRepository.getFeatures()` solo será necesario para la capa de renderizado del mapa (client-side).
+Cuando PostGIS gestione el lookup, el pipeline ya no necesita cargar el GeoJSON de comunas para ray-casting. `getCommuneRepository().getFeatures()` solo será necesario para la capa de renderizado del mapa (client-side vía `communesGeojson`).
 
 ---
 
@@ -146,27 +155,11 @@ Cuando PostGIS gestiona el lookup, el pipeline ya no necesita cargar el GeoJSON 
 ```
 normalize-openroute-route.ts
   │
-  ├── localCommuneRiskRepository.getAll()     ← sigue siendo local hasta que se migre
+  ├── getCommuneRiskRepository().getAll()    ← sigue desde Supabase
   │
-  └── findCommuneForPoint(midpoint)           ← async, sin features array
+  └── findCommuneForPoint(midpoint)          ← async, sin features array
         │
         └── postgisCommuneLookup.findCommuneId(point)
               │
-              └── SELECT id FROM communes WHERE ST_Within(...)  ← Supabase / PostGIS
+              └── SELECT FROM communes WHERE ST_Within(...)  ← Supabase / PostGIS
 ```
-
----
-
-## Estado actual de preparación para ST_Within
-
-| Requisito | Estado |
-|-----------|--------|
-| Interface abstracta `SpatialCommuneLookupStrategy` | Creada |
-| Ray-casting encapsulado en estrategia | Completo |
-| Façade `findCommuneForPoint` desacoplada | Completo |
-| Placeholder PostGIS con TODOs | Creado (throws en runtime) |
-| Migración de interfaz a async | Pendiente (documentada en placeholder) |
-| Supabase configurado | Pendiente |
-| Tabla `communes` con geometría PostGIS | Pendiente |
-| Índice GIST en geometry | Pendiente |
-| Seed GeoJSON → tabla communes | Pendiente |

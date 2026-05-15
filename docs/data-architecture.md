@@ -1,124 +1,206 @@
 # Safe Maps — Arquitectura de datos
 
-Describe la capa de acceso a datos actual: archivos locales, loaders, repositories y la preparación para migración a Supabase/PostGIS.
+Describe la capa de acceso a datos: feature flag, repositories, flujo desde la base de datos hasta la UI, y fuente única de verdad del riesgo por comuna.
 
 ---
 
 ## Estado actual
 
-Safe Maps opera completamente sobre archivos estáticos locales. No hay base de datos activa. No existe conexión a Supabase.
+Safe Maps puede operar en dos modos, controlados por la variable de entorno `SAFE_MAPS_DATA_SOURCE`:
 
-| Fuente de datos | Formato | Ubicación | Propósito |
-|----------------|---------|-----------|-----------|
-| `comunas-cali.geojson` | GeoJSON | `public/data/` | Geometría oficial de comunas de Cali |
-| `comunas-risk.json` | JSON | `public/data/` | Perfiles de riesgo simulados por comuna |
+| Modo | Fuente de riesgo | Fuente de geometría |
+|------|-----------------|---------------------|
+| `local` (default) | `public/data/comunas-risk.json` | `public/data/comunas-cali.geojson` |
+| `supabase` | Supabase: tabla `commune_risk_profiles` | Supabase: vista `communes_geojson` (PostGIS) |
 
-Ambos archivos se leen en tiempo de ejecución del servidor (server-side) y se mantienen en caché en memoria durante la vida del proceso.
+El modo activo en producción y desarrollo es `supabase` (configurado en `apps/web/.env.local`). Los archivos locales permanecen como fallback.
 
 ---
 
-## Flujo de datos
+## Flujo completo de riesgo: DB → UI
 
 ```
-public/data/comunas-cali.geojson
-public/data/comunas-risk.json
-        │
-        ▼
-lib/geo/load-communes-geojson.ts     lib/risk/load-communes-risk.ts
-(loader con caché en módulo)         (loader con caché en módulo)
-        │                                     │
-        ▼                                     ▼
-lib/repositories/local-commune-repository.ts
-lib/repositories/local-commune-risk-repository.ts
-        │
-        ▼
-lib/routes/normalize-openroute-route.ts
-(pipeline principal: segmentación + commune lookup + riesgo)
-        │
-        ▼
-lib/risk/euler-accumulated-route-risk.ts
-(integrador Euler)
-        │
-        ▼
-RouteAnalysis → cliente
+Supabase: commune_risk_profiles + communes
+         │
+         ▼
+SupabaseCommuneRiskRepository.getAll()
+         │
+         ▼
+GET /api/communes/risk               (force-dynamic; server-side)
+         │
+         ▼
+loadEnrichedGeojson()                (components/map/data/load-communes.ts)
+  ├── fetch("/data/comunas-cali.geojson")   → geometría offline
+  └── fetch("/api/communes/risk")           → perfiles de riesgo
+         │
+         ▼
+communesGeojson: GeoJSON.FeatureCollection  (estado React en MapLayout)
+  ├── MapLibreView    → capa "comunas-fill" coloreada por riskLevel
+  ├── selectedCommune → useMemo(communesGeojson, selectedCommuneId) → panel lateral
+  └── popups          → normalizeCommuneProperties(feature.properties) al hacer hover
 ```
 
----
-
-## Por qué se introdujo el Repository Pattern
-
-El pipeline original llamaba a `loadCommunesGeoJSON()` y `loadCommunesRisk()` directamente desde `normalize-openroute-route.ts`. Esto acoplaba el pipeline a la implementación de lectura de archivos locales.
-
-El Repository Pattern introduce una interfaz entre el pipeline y la fuente de datos. El pipeline declara qué necesita (`getFeatures()`, `getAll()`), sin importar de dónde vienen los datos. Para migrar a Supabase, solo se reemplaza la implementación — el pipeline no cambia.
-
-Beneficios concretos en esta fase:
-- El pipeline no sabe si los datos vienen de un archivo, una DB o un mock de test.
-- Los tests futuros pueden inyectar implementaciones en memoria sin tocar el sistema de archivos.
-- La migración a Supabase queda localizada en `lib/repositories/`.
+**Regla:** la UI nunca lee riesgo directamente de archivos locales ni de MapLibre feature properties para estado persistente. Todo deriva de `communesGeojson`, que proviene de `GET /api/communes/risk`.
 
 ---
 
-## Qué sigue usando JSON/GeoJSON local
+## Fuente única de verdad
 
-| Componente | Fuente | Notas |
-|-----------|--------|-------|
-| `LocalCommuneRepository` | `comunas-cali.geojson` | Delega a `loadCommunesGeoJSON()` |
-| `LocalCommuneRiskRepository` | `comunas-risk.json` | Delega a `loadCommunesRisk()` |
-| `lib/geo/load-communes-geojson.ts` | Sistema de archivos local | Mantiene caché de módulo |
-| `lib/risk/load-communes-risk.ts` | Sistema de archivos local | Mantiene caché de módulo |
+`GET /api/communes/risk` es la única fuente de riesgo por comuna para la UI. Todos los valores que se muestran deben coincidir:
 
-Los loaders siguen existiendo como implementación interna. No se exponen al pipeline directamente.
-
----
-
-## Qué queda preparado para Supabase/PostGIS
-
-| Interfaz | Método | Migración futura |
-|---------|--------|-----------------|
-| `CommuneRepository` | `getFeatures()` | `SupabaseCommuneRepository` ejecuta `ST_AsGeoJSON` o devuelve features desde tabla `communes` |
-| `CommuneRiskRepository` | `getAll()` | `SupabaseCommuneRiskRepository` ejecuta `SELECT * FROM commune_risk_profiles` |
-
-Para activar Supabase:
-1. Crear `SupabaseCommuneRepository implements CommuneRepository`
-2. Crear `SupabaseCommuneRiskRepository implements CommuneRiskRepository`
-3. Sustituir los singletons exportados en `local-commune-repository.ts` y `local-commune-risk-repository.ts`
-4. El pipeline no cambia.
-
-La función `findCommuneForPoint()` (ray-casting en JS) puede migrarse a una query `ST_Within` sin cambiar las interfaces de repository — solo el contenido de `getFeatures()` o, alternativamente, un método nuevo `findByPoint(lat, lng)` en la interfaz.
+| Punto de visualización | Fuente del valor |
+|-----------------------|-----------------|
+| Color de relleno de la capa del mapa | `communesGeojson.features[i].properties.riskLevel` |
+| Popup al pasar el cursor sobre comuna | `communesGeojson.features[i].properties` (via `normalizeCommuneProperties`) |
+| Panel lateral al seleccionar comuna | `selectedCommune = useMemo(communesGeojson, selectedCommuneId)` |
+| `localRiskScore` en segmentos de ruta | `getCommuneRiskRepository().getAll()` (server-side, misma fuente) |
 
 ---
 
-## Capas y límites
+## Feature Flag
+
+```typescript
+// lib/supabase/config.ts
+function getSafeMapsDataSource(): "local" | "supabase" {
+  return process.env.SAFE_MAPS_DATA_SOURCE === "supabase" ? "supabase" : "local";
+}
+```
+
+```typescript
+// lib/repositories/repository-factory.ts
+export function getCommuneRiskRepository(): CommuneRiskRepository {
+  if (getSafeMapsDataSource() === "supabase") {
+    return new SupabaseCommuneRiskRepository();
+  }
+  return localCommuneRiskRepository;
+}
+```
+
+El flag se evalúa en tiempo de ejecución server-side; no hay recompilación necesaria para cambiar de fuente.
+
+---
+
+## Repository Pattern
+
+### Interfaces
+
+```typescript
+// lib/repositories/commune-repository.ts
+interface CommuneRepository {
+  getFeatures(): Promise<CommuneFeature[]>;
+}
+
+// lib/repositories/commune-risk-repository.ts
+interface CommuneRiskRepository {
+  getAll(): Promise<CommuneRisk[]>;
+}
+```
+
+### Implementaciones locales
+
+| Clase | Fuente | Propósito |
+|-------|--------|-----------|
+| `LocalCommuneRepository` | `comunas-cali.geojson` | Geometría para ray-casting (fallback) |
+| `LocalCommuneRiskRepository` | `comunas-risk.json` | Perfiles de riesgo simulados (fallback) |
+
+### Implementaciones Supabase
+
+| Clase | Consulta | Propósito |
+|-------|---------|-----------|
+| `SupabaseCommuneRepository` | Vista `communes_geojson` | Geometría PostGIS como GeoJSON Feature[] |
+| `SupabaseCommuneRiskRepository` | `commune_risk_profiles` JOIN `communes` | Perfiles de riesgo desde PostgreSQL |
+
+`SupabaseCommuneRepository` lee desde `communes_geojson` (que expone `st_asgeojson(geometry)::jsonb`) en lugar de leer `communes.geometry` directamente, porque la serialización PostGIS no es estable a través de PostgREST.
+
+---
+
+## Capas y límites de importación
 
 ```
-pipeline (normalize-openroute-route.ts)
-    │  importa
+app/api/ y lib/routes/              ← pipeline de análisis
+    │  importa singletons de
     ▼
-repositories/  (interfaces + implementaciones)
-    │  importa
+lib/repositories/                   ← interfaces + implementaciones
+    │  puede importar
     ▼
-loaders / geo /  (acceso a sistema de archivos o red)
+lib/geo/load-communes-geojson.ts    ← loader con caché para GeoJSON local
+lib/risk/load-communes-risk.ts      ← loader con caché para JSON local
+lib/supabase/server.ts              ← cliente PostgREST (server-side)
     │  lee
     ▼
-public/data/  (fuentes de datos locales)
+public/data/ o Supabase            ← fuentes de datos
+
+components/                         ← UI React
+    │  NO importa repositories ni loaders
+    ▼
+fetch("/api/communes/risk")         ← única ruta de datos para la UI
 ```
 
-**Regla:** el pipeline no importa loaders directamente. Los components del cliente no importan loaders ni repositories.
+**Restricciones:**
+- El pipeline no importa loaders directamente.
+- Los componentes de UI no importan repositories, loaders ni el cliente de Supabase.
+- Supabase client (`lib/supabase/server.ts`) solo se instancia en contextos server-side.
 
 ---
 
-## Limitaciones actuales de la capa de datos
+## Endpoint `GET /api/communes/risk`
+
+```typescript
+// app/api/communes/risk/route.ts
+export const dynamic = "force-dynamic";
+
+export async function GET(): Promise<NextResponse> {
+  try {
+    const data = await getCommuneRiskRepository().getAll();
+    return NextResponse.json(data);
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Failed to load commune risk data";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
+}
+```
+
+Devuelve `CommuneRisk[]`:
+
+```typescript
+interface CommuneRisk {
+  comuna: number;        // 1–22
+  riskScore: number;     // 0–100
+  riskLevel: RouteRiskLevel;
+  criminalidad: number;
+  seguridad: number;
+  vigilancia: number;
+  iluminacion: number;
+  flujoPersonas: number;
+}
+```
+
+---
+
+## Tipo canónico `CommuneRisk`
+
+`CommuneRisk` (en `lib/types/commune-risk.ts`) es el mismo tipo que `CommuneRiskData` (alias en `components/map/types.ts`). Ambos son idénticos; `CommuneRiskData` existe para contexto de frontend. El pipeline del servidor usa `CommuneRisk`.
+
+---
+
+## Archivos de datos locales
+
+Los archivos locales permanecen en `public/data/` como fallback y para desarrollo sin Supabase:
+
+| Archivo | Propósito |
+|---------|-----------|
+| `comunas-cali.geojson` | Geometría oficial de las 22 comunas (IDESC/QGIS, EPSG:4326) |
+| `comunas-risk.json` | Perfiles de riesgo simulados (C, S, V, I, F, riskScore, riskLevel) |
+
+Cuando `SAFE_MAPS_DATA_SOURCE=supabase`, `comunas-risk.json` no se lee para la UI. Sí se usa para comparación y como fuente de referencia del modo local.
+
+---
+
+## Limitaciones actuales
 
 | Limitación | Impacto |
 |-----------|---------|
-| Sin base de datos | No hay persistencia de análisis ni histórico |
-| Dataset de riesgo simulado | Valores no calibrados con datos reales |
-| Caché en memoria de proceso | Se pierde en cada deploy o reinicio |
-| Join espacial en JS | Correcto, pero no escalable a datasets grandes |
-| Sin connection pooling | No aplica hoy; crítico cuando llegue Supabase |
-
----
-
-## No hay conexión a Supabase
-
-El scaffold de Supabase no está creado todavía. No existe `SUPABASE_URL` ni `SUPABASE_ANON_KEY` en el proyecto. Los archivos `lib/repositories/` actuales no dependen de ningún cliente de Supabase.
+| Sin persistencia de análisis | Los análisis de rutas son efímeros |
+| Datos de riesgo simulados | `riskScore` no proviene de fuentes criminales reales |
+| Sin caché server-side de ORS | Llamadas duplicadas a OpenRouteService |
+| Ray-casting en JS | Correcto pero no escalable a datasets grandes |
