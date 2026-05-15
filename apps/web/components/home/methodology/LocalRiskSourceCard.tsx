@@ -6,92 +6,103 @@ function ReferenceBadge({ children }: { children: React.ReactNode }) {
   );
 }
 
-type FlowNode = {
-  label: string;
-  sublabel?: string;
-  variant: "db" | "type" | "euler";
-};
-
-const FLOW: FlowNode[] = [
+const FLOW = [
   {
-    label: "commune_risk_profiles.risk_score",
-    sublabel: "Supabase",
-    variant: "db",
+    title: "1. Usuario selecciona una ruta",
+    desc: "El usuario escribe un origen y un destino dentro de Cali.",
+    badge: "Frontend",
   },
   {
-    label: "CommuneRisk.riskScore",
-    sublabel: "dominio TypeScript",
-    variant: "type",
+    title: "2. OpenRouteService genera la ruta real",
+    desc: "La API devuelve coordenadas reales de calles y avenidas.",
+    badge: "OpenRouteService",
   },
   {
-    label: "RouteSegment.localRiskScore",
-    sublabel: "segmento enriquecido",
-    variant: "type",
+    title: "3. La ruta se divide en segmentos",
+    desc: "El backend transforma la geometría en pequeños tramos de aproximadamente 400 metros.",
+    badge: "Segmentación",
   },
   {
-    label: "Euler  →  usa como L",
-    sublabel: "integrador numérico",
-    variant: "euler",
+    title: "4. Cada segmento se cruza con comunas",
+    desc: "El sistema analiza el punto inicial y final del tramo para determinar por qué comuna pasa.",
+    badge: "Análisis espacial",
   },
-];
-
-const VARIANT_CLASS: Record<FlowNode["variant"], string> = {
-  db: "border-slate-600/50 bg-slate-900/60 text-slate-300",
-  type: "border-slate-700/40 bg-slate-900/40 text-slate-300",
-  euler:
-    "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
-};
+  {
+    title: "5. Supabase aporta el riesgo local",
+    desc: "Cada comuna tiene un risk_score normalizado entre 0 y 100 construido desde variables urbanas.",
+    badge: "Supabase",
+  },
+  {
+    title: "6. El segmento recibe localRiskScore",
+    desc: "El riesgo de la comuna se transforma en el riesgo local del segmento actual.",
+    badge: "TypeScript",
+  },
+  {
+    title: "7. Euler calcula el riesgo acumulado",
+    desc: "El modelo diferencial usa el riesgo local L para actualizar el acumulado R paso a paso.",
+    badge: "Euler",
+  },
+  {
+    title: "8. La interfaz visualiza el resultado",
+    desc: "El mapa colorea segmentos y muestra cómo cambia el riesgo durante el recorrido.",
+    badge: "UI",
+  },
+] as const;
 
 export function LocalRiskSourceCard() {
   return (
     <div className="rounded-2xl border border-emerald-500/25 bg-gradient-to-br from-emerald-500/[0.05] to-transparent p-6 backdrop-blur-sm">
-      <p className="mb-4 text-[10px] font-mono uppercase tracking-widest text-emerald-300">
-        Fuente de riesgo local
+      <p className="mb-5 text-[10px] font-mono uppercase tracking-widest text-emerald-300">
+        Flujo del modelo y origen del riesgo
       </p>
 
-      <div className="mb-4">
-        {FLOW.map(({ label, sublabel, variant }, i) => (
-          <div key={label}>
-            <div
-              className={`rounded-lg border px-3 py-2.5 font-mono text-[10px] ${VARIANT_CLASS[variant]}`}
-            >
-              <span>{label}</span>
-              {sublabel && (
-                <span className="ml-2 text-slate-600">· {sublabel}</span>
-              )}
-            </div>
-            {i < FLOW.length - 1 && (
-              <div className="ml-5 flex h-5 items-center">
-                <div className="h-full border-l border-dashed border-emerald-500/25" />
-                <span className="-ml-[3px] text-[11px] text-emerald-500/50">
-                  ↓
-                </span>
+      <div className="relative pl-6">
+        <div className="absolute left-[9px] top-2 bottom-2 border-l border-dashed border-emerald-500/20" />
+
+        <div className="space-y-5">
+          {FLOW.map((item, index) => (
+            <div key={item.title} className="relative">
+              <div className="absolute -left-6 top-2 h-3.5 w-3.5 rounded-full border border-emerald-400/40 bg-emerald-400/20" />
+
+              <div className="rounded-xl border border-slate-700/40 bg-slate-950/40 p-4">
+                <div className="mb-2 flex flex-wrap items-center gap-2">
+                  <span className="rounded-md border border-emerald-500/20 bg-emerald-500/10 px-2 py-1 text-[10px] font-mono text-emerald-300">
+                    {item.badge}
+                  </span>
+                </div>
+
+                <h3 className="mb-2 text-sm font-semibold text-white">
+                  {item.title}
+                </h3>
+
+                <p className="text-xs leading-relaxed text-slate-400">
+                  {item.desc}
+                </p>
+
+                {index === 4 && (
+                  <div className="mt-4 rounded-lg border border-slate-700/40 bg-slate-900/40 p-3 text-xs leading-relaxed text-slate-400">
+                    Variables como criminalidad, seguridad, vigilancia,
+                    iluminación y flujo de personas alimentan el risk_score en
+                    la base de datos. En esta versión, Euler no usa directamente
+                    esas variables; utiliza el puntaje final ya calculado.
+                  </div>
+                )}
+
+                {index === 6 && (
+                  <div className="mt-4 rounded-lg border border-emerald-500/15 bg-emerald-500/[0.03] p-3 text-xs leading-relaxed text-slate-300">
+                    Euler toma el riesgo acumulado anterior y lo compara con el
+                    riesgo local del segmento actual. Luego calcula cuánto debe
+                    subir o bajar el acumulado dependiendo de la distancia
+                    recorrida.
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        ))}
+            </div>
+          ))}
+        </div>
       </div>
 
-      <p className="mb-3 text-xs leading-relaxed text-slate-400">
-        Supabase entrega perfiles de riesgo por comuna. Cada perfil tiene un{" "}
-        <span className="font-mono text-emerald-300">risk_score</span>{" "}
-        normalizado entre 0 y 100. Ese valor se convierte en{" "}
-        <span className="font-mono text-slate-300">localRiskScore</span> dentro
-        del segmento de ruta y Euler lo usa como{" "}
-        <span className="font-mono text-amber-300">L</span>.
-      </p>
-
-      <div className="mb-4 rounded-lg border border-slate-700/40 bg-slate-900/40 p-3">
-        <p className="text-[10px] leading-relaxed text-slate-500">
-          Variables como criminalidad, seguridad, vigilancia, iluminación y
-          flujo de personas alimentan el{" "}
-          <span className="font-mono text-slate-400">risk_score</span> en la
-          base de datos. En esta versión, Euler no las usa directamente; opera
-          sobre el puntaje final ya calculado.
-        </p>
-      </div>
-
-      <div className="flex flex-wrap gap-2">
+      <div className="mt-5 flex flex-wrap gap-2">
         <ReferenceBadge>
           apps/web/lib/repositories/supabase-commune-risk-repository.ts
         </ReferenceBadge>
