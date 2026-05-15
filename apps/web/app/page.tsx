@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MethodologyIntro } from "@/components/home/methodology";
+import { MethodologyIntro, PipelineSteps } from "@/components/home/methodology";
 
 // --- Icon components (inline SVG) ---
 
@@ -288,152 +288,11 @@ function Features() {
 
 // --- Flow ---
 
-type FlowStepProps = {
-  step: string;
-  title: string;
-  description: string;
-  detail: string;
-  reference: string;
-};
-
-const FLOW_STEPS: FlowStepProps[] = [
-  {
-    step: "01",
-    title: "Ruta real",
-    description:
-      "OpenRouteService entrega la geometría de la ruta entre origen y destino.",
-    detail:
-      "El sistema trabaja sobre coordenadas reales de la vía, no sobre una línea dibujada manualmente.",
-    reference: "normalizeOpenRouteResponse()",
-  },
-  {
-    step: "02",
-    title: "Segmentación",
-    description:
-      "La geometría se divide en tramos continuos de aproximadamente 400 metros.",
-    detail:
-      "Cada tramo conserva sus coordenadas y distancia para que Euler avance con un delta espacial medible.",
-    reference: "TARGET_SEGMENT_METERS = 400",
-  },
-  {
-    step: "03",
-    title: "Cruce geográfico",
-    description:
-      "El punto medio de cada segmento se cruza contra los polígonos de comunas.",
-    detail:
-      "Así cada tramo hereda una comuna de análisis sin romper la continuidad de la ruta.",
-    reference: "findCommuneForPoint()",
-  },
-  {
-    step: "04",
-    title: "Riesgo local",
-    description:
-      "Supabase aporta el perfil de riesgo de la comuna asociada al tramo.",
-    detail:
-      "Las variables criminalidad, seguridad, vigilancia, iluminación y flujo alimentan risk_score; Euler usa ese score como L.",
-    reference: "commune_risk_profiles.risk_score",
-  },
-  {
-    step: "05",
-    title: "Condición inicial",
-    description:
-      "El acumulado inicia con el riesgo de la comuna donde comienza la ruta.",
-    detail:
-      "R(0) no es arbitrario: se toma desde initialRiskScore antes de recorrer los segmentos.",
-    reference: "initialRiskScore",
-  },
-  {
-    step: "06",
-    title: "Ecuación diferencial",
-    description:
-      "El riesgo acumulado R evoluciona hacia el riesgo local L del segmento actual.",
-    detail:
-      "Si L es mayor que R, el acumulado sube; si L es menor, baja gradualmente; si son iguales, se mantiene.",
-    reference: "dR/dx = k(L - R)",
-  },
-  {
-    step: "07",
-    title: "Método de Euler",
-    description:
-      "Cada segmento aplica una aproximación numérica usando su longitud en kilómetros.",
-    detail:
-      "El nuevo valor se limita al rango 0-100 para conservar la escala de riesgo del sistema.",
-    reference: "calculateEulerRiskEvolution()",
-  },
-  {
-    step: "08",
-    title: "Evolución del riesgo",
-    description:
-      "El resultado de cada paso se guarda como riesgo acumulado del segmento.",
-    detail:
-      "localRiskScore describe la comuna actual; accumulatedRiskScore describe la historia recorrida hasta ese punto.",
-    reference: "accumulatedRiskScore",
-  },
-  {
-    step: "09",
-    title: "Visualización final",
-    description:
-      "La UI recibe segmentos enriquecidos con riesgo local, acumulado y nivel de clasificación.",
-    detail:
-      "El mapa y los paneles pueden explicar no solo dónde hay riesgo, sino cómo cambia a lo largo de la ruta.",
-    reference: "RouteAnalysis.segments",
-  },
-];
-
 function ReferenceBadge({ children }: { children: React.ReactNode }) {
   return (
     <span className="inline-flex w-fit rounded-md border border-slate-700/60 bg-slate-950/70 px-2 py-1 font-mono text-[10px] leading-none text-cyan-300/80">
       {children}
     </span>
-  );
-}
-
-function FlowStep({ step, title, description, detail, reference }: FlowStepProps) {
-  return (
-    <article className="rounded-xl border border-white/8 bg-white/[0.025] p-5 transition-colors duration-200 hover:border-cyan-500/30">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <span className="font-mono text-[11px] font-semibold text-cyan-400">
-          {step}
-        </span>
-        <ReferenceBadge>{reference}</ReferenceBadge>
-      </div>
-      <h3 className="mb-2 text-base font-semibold text-white">{title}</h3>
-      <p className="text-sm leading-relaxed text-slate-300">{description}</p>
-      <p className="mt-3 text-xs leading-relaxed text-slate-500">{detail}</p>
-    </article>
-  );
-}
-
-function PipelineRail() {
-  const stages = [
-    "OpenRouteService",
-    "segmentByDistance()",
-    "findCommuneForPoint()",
-    "findRiskByCommune()",
-    "Euler",
-    "UI",
-  ];
-
-  return (
-    <div className="rounded-xl border border-cyan-500/15 bg-[#06101d] p-4">
-      <p className="mb-4 text-[10px] font-mono uppercase tracking-widest text-cyan-400">
-        Pipeline real
-      </p>
-      <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
-        {stages.map((stage, index) => (
-          <div key={stage} className="flex items-center gap-2">
-            <div className="min-h-12 flex-1 rounded-lg border border-slate-700/50 bg-slate-950/40 px-3 py-2">
-              <p className="font-mono text-[10px] leading-relaxed text-slate-300">
-                {stage}
-              </p>
-            </div>
-            {index < stages.length - 1 && (
-              <IconArrow className="hidden h-3.5 w-3.5 shrink-0 text-cyan-500/60 lg:block" />
-            )}
-          </div>
-        ))}
-      </div>
-    </div>
   );
 }
 
@@ -443,15 +302,9 @@ function FlowSection() {
       <div className="mx-auto max-w-6xl">
         <MethodologyIntro />
 
-        <PipelineRail />
+        <PipelineSteps />
 
-        <div className="mt-8 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {FLOW_STEPS.map((item) => (
-            <FlowStep key={item.step} {...item} />
-          ))}
-        </div>
-
-        <div className="mt-8 grid gap-4 lg:grid-cols-[1.08fr_0.92fr]">
+        <div className="mt-14 grid gap-4 lg:grid-cols-[1.08fr_0.92fr]">
           <div className="rounded-xl border border-white/8 bg-white/[0.025] p-5">
             <p className="mb-4 text-[10px] font-mono uppercase tracking-widest text-cyan-400">
               Paso numérico por segmento
