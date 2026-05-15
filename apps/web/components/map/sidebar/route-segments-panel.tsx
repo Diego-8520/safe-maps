@@ -1,7 +1,10 @@
+"use client";
+
+import { useState } from "react";
 import type { RouteAnalysis, RouteRiskLevel } from "@/components/map/routes/route-types";
 import { formatDistanceKm } from "@/components/map/routes/route-utils";
 
-const MAX_DISPLAY = 8;
+const PAGE_SIZE = 8;
 
 const LEVEL_DOT: Record<RouteRiskLevel, string> = {
   low:    "bg-emerald-400",
@@ -25,11 +28,23 @@ function ScoreCell({ score, level }: { score: number; level: RouteRiskLevel }) {
 }
 
 export default function RouteSegmentsPanel({ route }: { route: RouteAnalysis | null }) {
+  const segmentCount = route?.segments.length ?? 0;
+  const [page, setPage] = useState(0);
+  const [prevSegmentCount, setPrevSegmentCount] = useState(segmentCount);
+
+  if (prevSegmentCount !== segmentCount) {
+    setPrevSegmentCount(segmentCount);
+    setPage(0);
+  }
+
   if (!route || route.segments.length === 0) return null;
 
   const { segments } = route;
-  const displayed = segments.slice(0, MAX_DISPLAY);
-  const hasMore = segments.length > MAX_DISPLAY;
+  const totalPages = Math.ceil(segments.length / PAGE_SIZE);
+  const start = page * PAGE_SIZE;
+  const end = Math.min(start + PAGE_SIZE, segments.length);
+  const displayed = segments.slice(start, end);
+  const hasPagination = segments.length > PAGE_SIZE;
 
   return (
     <div className="px-5 py-5 border-b border-white/5">
@@ -37,9 +52,9 @@ export default function RouteSegmentsPanel({ route }: { route: RouteAnalysis | n
         <p className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">
           Evolución por segmentos
         </p>
-        {hasMore && (
+        {hasPagination && (
           <span className="text-[10px] font-mono text-slate-600">
-            {MAX_DISPLAY} / {segments.length}
+            {start + 1}–{end} / {segments.length}
           </span>
         )}
       </div>
@@ -60,7 +75,7 @@ export default function RouteSegmentsPanel({ route }: { route: RouteAnalysis | n
             className="grid grid-cols-[1.5rem_3rem_2.25rem_auto_auto] gap-x-2 items-center px-2 py-1.5 rounded-lg bg-white/3 border border-white/6"
           >
             <span className="text-[10px] font-mono text-slate-600">
-              {String(i + 1).padStart(2, "0")}
+              {String(start + i + 1).padStart(2, "0")}
             </span>
             <span className="text-[10px] font-mono text-slate-400">
               {formatDistanceKm(seg.distanceMeters)}
@@ -74,10 +89,26 @@ export default function RouteSegmentsPanel({ route }: { route: RouteAnalysis | n
         ))}
       </div>
 
-      {hasMore && (
-        <p className="text-[10px] font-mono text-slate-600 text-center mt-2">
-          Mostrando {MAX_DISPLAY} de {segments.length} segmentos
-        </p>
+      {hasPagination && (
+        <div className="flex items-center justify-between mt-2">
+          <button
+            onClick={() => setPage((p) => p - 1)}
+            disabled={page === 0}
+            className="text-[10px] font-mono text-slate-500 hover:text-slate-300 disabled:text-slate-700 disabled:cursor-not-allowed px-1.5 py-0.5"
+          >
+            ‹
+          </button>
+          <span className="text-[10px] font-mono text-slate-600">
+            {page + 1} / {totalPages}
+          </span>
+          <button
+            onClick={() => setPage((p) => p + 1)}
+            disabled={page >= totalPages - 1}
+            className="text-[10px] font-mono text-slate-500 hover:text-slate-300 disabled:text-slate-700 disabled:cursor-not-allowed px-1.5 py-0.5"
+          >
+            ›
+          </button>
+        </div>
       )}
     </div>
   );

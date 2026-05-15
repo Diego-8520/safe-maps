@@ -8,7 +8,7 @@ import { normalizeCommuneProperties } from "./data/load-communes";
 import { buildCommunePopupHtml } from "./popups/commune-popup";
 import { buildRouteSegmentPopupHtml } from "./popups/route-segment-popup";
 import type { RouteSegmentPopupProps } from "./popups/route-segment-popup";
-import { buildRouteGeoJson } from "./routes/route-utils";
+import { buildRouteGeoJson, buildRouteSegmentPointsGeoJson } from "./routes/route-utils";
 
 interface MapLibreViewProps {
   onCommuneSelect?: (id: number) => void;
@@ -212,34 +212,31 @@ export default function MapLibreView({ onCommuneSelect, route, communesGeojson }
       if (!map) return;
 
       if (!route) {
+        if (map.getLayer("route-segment-points")) map.removeLayer("route-segment-points");
+        if (map.getSource("route-segment-points")) map.removeSource("route-segment-points");
         if (map.getLayer("route-line")) map.removeLayer("route-line");
         if (map.getSource("route")) map.removeSource("route");
         return;
       }
 
-      const geojson = buildRouteGeoJson(route);
+      // Insert before selected-commune-outline so commune highlight stays on top
+      const beforeId = map.getLayer("selected-commune-outline")
+        ? "selected-commune-outline"
+        : undefined;
 
+      const geojson = buildRouteGeoJson(route);
       if (map.getSource("route")) {
         (map.getSource("route") as maplibregl.GeoJSONSource).setData(geojson);
       } else {
         map.addSource("route", { type: "geojson", data: geojson });
       }
-
       if (!map.getLayer("route-line")) {
-        // Insert before selected-commune-outline so highlight stays on top
-        const beforeId = map.getLayer("selected-commune-outline")
-          ? "selected-commune-outline"
-          : undefined;
-
         map.addLayer(
           {
             id: "route-line",
             type: "line",
             source: "route",
-            layout: {
-              "line-cap": "round",
-              "line-join": "round",
-            },
+            layout: { "line-cap": "round", "line-join": "round" },
             paint: {
               "line-color": [
                 "match",
@@ -256,6 +253,35 @@ export default function MapLibreView({ onCommuneSelect, route, communesGeojson }
                 14, 7,
               ],
               "line-opacity": 0.95,
+            },
+          },
+          beforeId,
+        );
+      }
+
+      const pointsGeojson = buildRouteSegmentPointsGeoJson(route);
+      if (map.getSource("route-segment-points")) {
+        (map.getSource("route-segment-points") as maplibregl.GeoJSONSource).setData(pointsGeojson);
+      } else {
+        map.addSource("route-segment-points", { type: "geojson", data: pointsGeojson });
+      }
+      if (!map.getLayer("route-segment-points")) {
+        map.addLayer(
+          {
+            id: "route-segment-points",
+            type: "circle",
+            source: "route-segment-points",
+            paint: {
+              "circle-radius": [
+                "interpolate", ["linear"], ["zoom"],
+                10, 2,
+                13, 3,
+                16, 4,
+              ],
+              "circle-color": "#ffffff",
+              "circle-stroke-color": "#0f172a",
+              "circle-stroke-width": 1,
+              "circle-opacity": 0.9,
             },
           },
           beforeId,
