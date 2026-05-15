@@ -27,12 +27,12 @@ const VARIABLES = [
 
 export function EquationImplementedCard() {
   return (
-    <div className="rounded-2xl border border-amber-500/25 bg-gradient-to-br from-amber-500/[0.06] to-transparent p-6 backdrop-blur-sm">
+    <div className="rounded-2xl border border-amber-500/25 bg-linear-to-br from-amber-500/6 to-transparent p-6 backdrop-blur-sm">
       <p className="mb-4 text-[10px] font-mono uppercase tracking-widest text-amber-300">
         Ecuación implementada
       </p>
 
-      <div className="mb-6 flex items-center justify-center rounded-xl border border-amber-500/20 bg-amber-500/[0.04] px-4 py-8">
+      <div className="mb-6 flex items-center justify-center rounded-xl border border-amber-500/20 bg-amber-500/4 px-4 py-8">
         <div className="flex items-center gap-5 text-white">
           <div className="flex flex-col items-center font-serif text-3xl md:text-5xl">
             <span className="border-b border-white/30 px-3 pb-1">dR</span>

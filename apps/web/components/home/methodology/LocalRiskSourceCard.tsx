@@ -51,7 +51,7 @@ const FLOW = [
 
 export function LocalRiskSourceCard() {
   return (
-    <div className="rounded-2xl border border-emerald-500/25 bg-gradient-to-br from-emerald-500/[0.05] to-transparent p-6 backdrop-blur-sm">
+    <div className="rounded-2xl border border-emerald-500/25 bg-linear-to-br from-emerald-500/5 to-transparent p-6 backdrop-blur-sm">
       <p className="mb-5 text-[10px] font-mono uppercase tracking-widest text-emerald-300">
         Flujo del modelo y origen del riesgo
       </p>
@@ -89,7 +89,7 @@ export function LocalRiskSourceCard() {
                 )}
 
                 {index === 6 && (
-                  <div className="mt-4 rounded-lg border border-emerald-500/15 bg-emerald-500/[0.03] p-3 text-xs leading-relaxed text-slate-300">
+                  <div className="mt-4 rounded-lg border border-emerald-500/15 bg-emerald-500/3 p-3 text-xs leading-relaxed text-slate-300">
                     Euler toma el riesgo acumulado anterior y lo compara con el
                     riesgo local del segmento actual. Luego calcula cuánto debe
                     subir o bajar el acumulado dependiendo de la distancia
